@@ -5,3 +5,4 @@ __pycache__/
 .DS_Store
 sample_docs/*
 !sample_docs/README.md
+ocr_output/
