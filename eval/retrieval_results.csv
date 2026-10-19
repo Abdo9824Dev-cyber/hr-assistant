@@ -1,0 +1,28 @@
+﻿lang,question,expected_source,top_results,hit_at_1,hit_at_3
+en,How many annual leave days do I get in my first year?,EN-01_Annual_Leave_Policy,EN-01_Annual_Leave_Policy | EN-05_Training_and_Development | EN-06_Overtime_Policy,True,True
+ar,كم يوم إجازة سنوية أستحق بعد خمس سنوات؟,EN-01_Annual_Leave_Policy,EN-01_Annual_Leave_Policy | AR-05_Special_Leave_Policy | EN-05_Training_and_Development,True,True
+en,How many leave days can I carry over to next year?,EN-01_Annual_Leave_Policy,EN-01_Annual_Leave_Policy | EN-05_Training_and_Development | EN-02_Remote_Work_Policy,True,True
+en,How much notice do I need to give for a 10-day leave request?,EN-01_Annual_Leave_Policy,EN-01_Annual_Leave_Policy | EN-06_Overtime_Policy | EN-03_Expenses_and_Business_Travel,True,True
+en,How many days per week can I work from home?,EN-02_Remote_Work_Policy,EN-02_Remote_Work_Policy | EN-06_Overtime_Policy | EN-01_Annual_Leave_Policy,True,True
+ar,هل يمكنني العمل عن بعد من خارج السعودية؟,EN-02_Remote_Work_Policy,AR-06_Ramadan_Working_Hours | EN-02_Remote_Work_Policy | AR-03_Sick_Leave_Policy,False,True
+en,What is the internet allowance for remote work?,EN-02_Remote_Work_Policy,EN-02_Remote_Work_Policy | EN-03_Expenses_and_Business_Travel | EN-01_Annual_Leave_Policy,True,True
+en,What is the hotel limit in Jeddah?,EN-03_Expenses_and_Business_Travel,EN-03_Expenses_and_Business_Travel | EN-02_Remote_Work_Policy | EN-06_Overtime_Policy,True,True
+ar,ما هي البدل اليومي للسفر الدولي؟,EN-03_Expenses_and_Business_Travel,EN-03_Expenses_and_Business_Travel | EN-02_Remote_Work_Policy | AR-05_Special_Leave_Policy,True,True
+en,How long do I have to submit an expense claim?,EN-03_Expenses_and_Business_Travel,EN-03_Expenses_and_Business_Travel | EN-01_Annual_Leave_Policy | EN-05_Training_and_Development,True,True
+en,Can I accept a gift worth SAR 500 from a supplier?,EN-04_Code_of_Conduct,EN-04_Code_of_Conduct | EN-03_Expenses_and_Business_Travel | EN-05_Training_and_Development,True,True
+en,What is my yearly training budget?,EN-05_Training_and_Development,EN-05_Training_and_Development | EN-01_Annual_Leave_Policy | EN-03_Expenses_and_Business_Travel,True,True
+en,Do I have to repay training costs if I resign?,EN-05_Training_and_Development,EN-05_Training_and_Development | EN-01_Annual_Leave_Policy | EN-06_Overtime_Policy,True,True
+en,How is overtime paid?,EN-06_Overtime_Policy,EN-06_Overtime_Policy | EN-01_Annual_Leave_Policy | EN-03_Expenses_and_Business_Travel,True,True
+ar,ما هي أوقات الدوام الرسمي؟,AR-01_Attendance_Policy,AR-01_Attendance_Policy | AR-06_Ramadan_Working_Hours | EN-06_Overtime_Policy,True,True
+ar,متى أعتبر متأخراً؟,AR-01_Attendance_Policy,AR-01_Attendance_Policy | EN-06_Overtime_Policy | EN-03_Expenses_and_Business_Travel,True,True
+en,What happens if I am late three times in a month?,AR-01_Attendance_Policy,EN-06_Overtime_Policy | EN-02_Remote_Work_Policy | EN-03_Expenses_and_Business_Travel,False,False
+ar,كم مدة فترة التجربة؟,AR-02_Probation_Policy,AR-02_Probation_Policy | AR-05_Special_Leave_Policy | AR-04_End_of_Service_Policy,True,True
+en,Does sick leave count towards my probation period?,AR-02_Probation_Policy,EN-01_Annual_Leave_Policy | AR-02_Probation_Policy | EN-06_Overtime_Policy,False,True
+ar,هل أحتاج تقرير طبي ليوم مرضي واحد؟,AR-03_Sick_Leave_Policy,AR-03_Sick_Leave_Policy | EN-01_Annual_Leave_Policy | AR-01_Attendance_Policy,True,True
+en,When must I upload my sick note?,AR-03_Sick_Leave_Policy,EN-01_Annual_Leave_Policy | AR-03_Sick_Leave_Policy | EN-02_Remote_Work_Policy,False,True
+ar,كم فترة الإشعار عند الاستقالة؟,AR-04_End_of_Service_Policy,AR-04_End_of_Service_Policy | AR-02_Probation_Policy | EN-01_Annual_Leave_Policy,True,True
+en,When is my final settlement paid after I leave?,AR-04_End_of_Service_Policy,EN-01_Annual_Leave_Policy | AR-04_End_of_Service_Policy | EN-05_Training_and_Development,False,True
+en,How many days of marriage leave do I get?,AR-05_Special_Leave_Policy,EN-01_Annual_Leave_Policy | EN-05_Training_and_Development | AR-05_Special_Leave_Policy,False,True
+ar,كم يوم إجازة للأب عند الولادة؟,AR-05_Special_Leave_Policy,AR-05_Special_Leave_Policy | EN-01_Annual_Leave_Policy | AR-03_Sick_Leave_Policy,True,True
+en,Am I eligible for Hajj leave in my first year?,AR-05_Special_Leave_Policy,EN-01_Annual_Leave_Policy | EN-02_Remote_Work_Policy | EN-05_Training_and_Development,False,False
+ar,ما هي ساعات العمل في رمضان؟,AR-06_Ramadan_Working_Hours,AR-06_Ramadan_Working_Hours | AR-01_Attendance_Policy | EN-06_Overtime_Policy,True,True
