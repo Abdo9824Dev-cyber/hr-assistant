@@ -13,3 +13,14 @@
 - At default strictness every miss was "no results" (filtered out), never a wrong policy.
 - Remaining misses: English questions about Arabic-only policies (Hajj leave, late arrivals). Fix planned for Day 7: bilingual keywords per document.
 - Lesson: console created the data store in global despite choosing eu; app and data store must share one location. Verify with the API.
+
+## Day 4 - RAG core (Gemini + Vertex AI Search)
+- Model: gemini-3.8-flash (chosen with check_models.py; kept in .env so it can change per client).
+- First version used Gemini's built-in grounding: only 6/27 answered, because its search uses
+  Google's default relevance filter, which can't be changed.
+- Rewrote as two-step RAG: our code searches (relevance LOWEST, 6 chunks with neighbours),
+  then Gemini answers only from those numbered sources and returns which ones it used (JSON).
+- Smoke test, 35 questions: answered with the correct source 27/27 (100%); correctly deferred 8/8 (100%).
+- Cross-language works both ways (Arabic question <- English policy and vice versa).
+- Trust rule in code: no cited source -> fixed "please contact HR" reply; no search results -> Gemini not called.
+- Gap noted: answers use one policy even when a related fact sits in another (remote work + Ramadan).
