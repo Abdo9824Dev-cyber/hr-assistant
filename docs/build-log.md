@@ -24,3 +24,11 @@
 - Cross-language works both ways (Arabic question <- English policy and vice versa).
 - Trust rule in code: no cited source -> fixed "please contact HR" reply; no search results -> Gemini not called.
 - Gap noted: answers use one policy even when a related fact sits in another (remote work + Ramadan).
+
+## Day 5 - API on Cloud Run
+- FastAPI service: GET /health, POST /ask (input validation, 20 req/min rate limit, safe 503 errors,
+  logs metadata only - never question text).
+- Containerised with a Dockerfile (python:3.12-slim, non-root user); built by Cloud Build on deploy.
+- Cloud Run service hr-api: private (IAM-only), min 0 / max 2 instances, runs as hr-assistant-sa
+  with least-privilege roles (aiplatform.user, discoveryengine.viewer).
+- Verified: /health and /ask work with an identity token; 403 without one.
