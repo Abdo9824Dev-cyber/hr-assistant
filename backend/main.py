@@ -1,23 +1,24 @@
-"""Day 5: the web API around the RAG core.
+"""HR Assistant web service: API + chat page in one Cloud Run service.
 
 Endpoints:
-    GET  /health  -> {"ok": true}            (used by Cloud Run and monitoring)
-    POST /ask     -> {"question": "..."}      returns answer, sources, grounded, lang
+    GET  /         -> the chat page (static/index.html)
+    GET  /health   -> status, and whether an access code is required / accepted
+    POST /ask      -> {"question": "..."} returns answer, sources, grounded, lang
 
 Run locally (from backend/, with .venv and .env loaded):
-    uvicorn main:app --reload --port 8080
-    then open http://localhost:8080/docs
+    uvicorn main:app --reload --port 8080   then open http://localhost:8080
 """
+import hmac
 import logging
 import os
+import pathlib
 import time
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
 from messages import DISCLAIMER
 from rag import MODEL, ask
@@ -26,15 +27,25 @@ log = logging.getLogger("hr-api")
 logging.basicConfig(level=logging.INFO)
 
 RATE_LIMIT = os.environ.get("RATE_LIMIT", "20/minute")
-ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("FRONTEND_URL", "*").split(",") if o.strip()]
+ACCESS_CODE = os.environ.get("ACCESS_CODE", "")   # empty = no code required (local development)
+STATIC_DIR = pathlib.Path(__file__).parent / "static"
 
-limiter = Limiter(key_func=get_remote_address)
-app = FastAPI(title="HR Assistant API", version="0.5.0",
+
+def client_ip(request: Request) -> str:
+    """Real visitor IP. Cloud Run puts it first in X-Forwarded-For."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    return forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
+
+
+limiter = Limiter(key_func=client_ip)
+app = FastAPI(title="HR Assistant API", version="0.6.0",
               description="Answers employee questions from company HR policies, in Arabic or English.")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS,
-                   allow_methods=["GET", "POST"], allow_headers=["*"])
+
+
+def code_ok(code: str | None) -> bool:
+    return not ACCESS_CODE or hmac.compare_digest((code or "").encode(), ACCESS_CODE.encode())
 
 
 class Question(BaseModel):
@@ -57,23 +68,24 @@ class AnswerOut(BaseModel):
 
 
 @app.get("/health")
-def health():
-    return {"ok": True, "model": MODEL}
+def health(x_access_code: str | None = Header(default=None)):
+    return {"ok": True, "model": MODEL,
+            "access_code_required": bool(ACCESS_CODE), "access_ok": code_ok(x_access_code)}
 
 
 @app.post("/ask", response_model=AnswerOut)
 @limiter.limit(RATE_LIMIT)
-def ask_route(request: Request, q: Question):
+def ask_route(request: Request, q: Question, x_access_code: str | None = Header(default=None)):
+    if not code_ok(x_access_code):
+        raise HTTPException(status_code=401, detail="Access code required.")
     start = time.perf_counter()
     try:
         result = ask(q.question.strip())
     except Exception:
-        # Log the error type for us, but never return internal details to the user.
-        log.exception("ask failed")
+        log.exception("ask failed")  # details stay in our logs, never sent to the user
         raise HTTPException(status_code=503, detail="The assistant is temporarily unavailable. Please try again.")
     latency = int((time.perf_counter() - start) * 1000)
-    # Privacy: log metadata only, never the question or answer text.
-    log.info("ask lang=%s grounded=%s sources=%d latency_ms=%d",
+    log.info("ask lang=%s grounded=%s sources=%d latency_ms=%d",  # metadata only, never the question
              result["lang"], result["grounded"], len(result["sources"]), latency)
     return AnswerOut(
         answer=result["answer"],
@@ -83,3 +95,7 @@ def ask_route(request: Request, q: Question):
         disclaimer=DISCLAIMER[result["lang"]],
         latency_ms=latency,
     )
+
+
+# The chat page. Mounted last so /health, /ask and /docs keep working.
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

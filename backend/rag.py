@@ -29,8 +29,19 @@ THRESHOLD = os.environ.get("SEARCH_THRESHOLD", "LOWEST").upper()
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_LOCATION = os.environ.get("GEMINI_LOCATION", "global")
 TOP_K = int(os.environ.get("RAG_TOP_K", "6"))
+GEMINI_TIMEOUT_MS = int(os.environ.get("GEMINI_TIMEOUT_MS", "25000"))  # give up on Gemini after 25 s
+SEARCH_TIMEOUT_S = float(os.environ.get("SEARCH_TIMEOUT_S", "10"))
+THINKING = os.environ.get("RAG_THINKING", "low").upper()  # MINIMAL, LOW, MEDIUM, HIGH or DEFAULT
 
-llm = genai.Client(vertexai=True, project=PROJECT, location=GEMINI_LOCATION)
+llm = genai.Client(
+    vertexai=True, project=PROJECT, location=GEMINI_LOCATION,
+    http_options=types.HttpOptions(
+        timeout=GEMINI_TIMEOUT_MS,
+        # one quick retry if Gemini is busy (429) or briefly unavailable (503)
+        retry_options=types.HttpRetryOptions(attempts=2, initial_delay=1.0, max_delay=3.0,
+                                             http_status_codes=[429, 503]),
+    ),
+)
 _endpoint = ("discoveryengine.googleapis.com" if SEARCH_LOCATION == "global"
              else f"{SEARCH_LOCATION}-discoveryengine.googleapis.com")
 search_client = de.SearchServiceClient(client_options=ClientOptions(api_endpoint=_endpoint))
@@ -89,7 +100,7 @@ def retrieve(question: str, engine_id: str = ENGINE) -> list:
         request.relevance_threshold = de.SearchRequest.RelevanceThreshold[THRESHOLD]
 
     docs = {}  # keep order: first time a document appears = its rank
-    for result in search_client.search(request).results:
+    for result in search_client.search(request, timeout=SEARCH_TIMEOUT_S).results:
         chunk = result.chunk
         if not chunk or not chunk.content:
             continue
@@ -104,6 +115,36 @@ def retrieve(question: str, engine_id: str = ENGINE) -> list:
             if p not in entry["parts"]:
                 entry["parts"].append(p)
     return [{"name": d["name"], "uri": d["uri"], "text": "\n".join(d["parts"])} for d in docs.values()]
+
+
+def _thinking_config(model: str):
+    """Short factual answers don't need long 'thinking' - it only adds waiting time."""
+    if THINKING in ("", "DEFAULT"):
+        return None
+    if model.startswith("gemini-2."):          # 2.x models use a token budget (0 = off)
+        return types.ThinkingConfig(thinking_budget=0 if THINKING in ("MINIMAL", "LOW") else -1)
+    return types.ThinkingConfig(thinking_level=types.ThinkingLevel[THINKING])
+
+
+def _generate(prompt: str):
+    config = dict(
+        system_instruction=SYSTEM,
+        temperature=0.1,
+        response_mime_type="application/json",
+        response_schema=Answer,
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+    )
+    thinking = _thinking_config(MODEL)
+    try:
+        return llm.models.generate_content(
+            model=MODEL, contents=prompt,
+            config=types.GenerateContentConfig(**config, thinking_config=thinking))
+    except Exception as e:
+        if thinking is None or "think" not in str(e).lower():
+            raise
+        # this model doesn't accept the thinking setting: try again without it
+        return llm.models.generate_content(
+            model=MODEL, contents=prompt, config=types.GenerateContentConfig(**config))
 
 
 def _model_deferred(answer: str) -> bool:
@@ -122,16 +163,10 @@ def ask(question: str, engine_id: str = ENGINE, debug: bool = False) -> dict:
 
     sources_block = "\n\n".join(
         f'<source id="{i}" name="{d["name"]}">\n{d["text"]}\n</source>' for i, d in enumerate(found, 1))
-    response = llm.models.generate_content(
-        model=MODEL,
-        contents=f"SOURCES:\n{sources_block}\n\nQUESTION: {question}",
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM,
-            temperature=0.1,
-            response_mime_type="application/json",
-            response_schema=Answer,
-        ),
-    )
+    answer_language = "Arabic" if lang == "ar" else "English"
+    response = _generate(
+        f"SOURCES:\n{sources_block}\n\nQUESTION: {question}\n\n"
+        f"Write the answer in {answer_language}, even if the sources are in another language.")
     parsed = response.parsed if isinstance(response.parsed, Answer) else None
     if parsed is None:  # fall back to reading the JSON text ourselves
         try:

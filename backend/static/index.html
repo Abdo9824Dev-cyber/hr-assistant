@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HR Assistant · Al-Noor</title>
+  <meta name="theme-color" content="#F3F5F4">
+  <script>
+    // Apply the saved theme before the page paints (no flash).
+    try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-lamp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></g></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-plane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.5 13.5 3 11l1.5-2 7 1 4.5-5.5c.8-1 2.6-1.3 3.2-.7.6.6.3 2.4-.7 3.2L13 11.5l1 7-2 1.5-2.5-7.5"/></symbol>
+    <symbol id="i-crescent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M15.5 3.5a8.5 8.5 0 1 0 5 13.6 7 7 0 0 1-5-13.6Z"/></symbol>
+  </svg>
+
+  <header class="top">
+    <div class="brand">
+      <span class="mark"><svg><use href="#i-lamp"/></svg></span>
+      <div class="brand-text">
+        <span class="brand-title" data-i18n="title"></span>
+        <span class="brand-sub" data-i18n="company"></span>
+      </div>
+    </div>
+    <div class="tools">
+      <button id="new-chat" class="icon-btn" type="button" hidden><svg><use href="#i-plus"/></svg><span class="label" data-i18n="newChat"></span></button>
+      <button id="theme" class="icon-btn round" type="button"><svg><use href="#i-moon"/></svg></button>
+      <button id="lang" class="pill-btn" type="button"></button>
+    </div>
+  </header>
+
+  <main id="chat" class="chat">
+    <section id="empty" class="empty">
+      <div class="glow" aria-hidden="true"><span class="mark big"><svg><use href="#i-lamp"/></svg></span></div>
+      <h1 data-i18n="emptyTitle"></h1>
+      <p data-i18n="emptyText"></p>
+      <div class="topics" id="topics"></div>
+    </section>
+    <ol id="messages" class="messages" aria-live="polite"></ol>
+  </main>
+
+  <footer class="dock">
+    <form id="ask" class="composer">
+      <label for="q" class="sr-only" data-i18n="placeholder"></label>
+      <textarea id="q" rows="1" dir="auto" maxlength="1000" required></textarea>
+      <button id="send" class="send" type="submit"><svg><use href="#i-send"/></svg><span class="sr-only" data-i18n="send"></span></button>
+    </form>
+    <p class="disclaimer" data-i18n="disclaimer"></p>
+  </footer>
+
+  <dialog id="gate" class="gate">
+    <form id="gate-form" method="dialog">
+      <span class="mark"><svg><use href="#i-lamp"/></svg></span>
+      <h2 data-i18n="gateTitle"></h2>
+      <p data-i18n="gateHelp"></p>
+      <label for="code" class="sr-only" data-i18n="gateTitle"></label>
+      <input id="code" type="password" autocomplete="off" required>
+      <p id="gate-error" class="gate-error" hidden data-i18n="gateWrong"></p>
+      <button type="submit" class="primary" data-i18n="gateButton"></button>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

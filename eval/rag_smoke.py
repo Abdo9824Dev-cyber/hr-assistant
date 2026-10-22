@@ -15,7 +15,7 @@ import sys
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "backend"))
-from rag import ask  # noqa: E402
+from rag import ask, is_arabic  # noqa: E402
 
 QUESTIONS = pathlib.Path("eval/questions_seed.csv")
 RESULTS = pathlib.Path("eval/rag_results.csv")
@@ -42,8 +42,9 @@ def main() -> None:
             time.sleep(PAUSE)
         res = ask_with_retry(r["question"])
         cited = [s["title"] for s in res["sources"]]
+        same_language = is_arabic(res["answer"]) == (r["lang"] == "ar")
         if r["should_defer"] == "no":
-            ok = res["grounded"] and r["expected_source"] in cited
+            ok = res["grounded"] and r["expected_source"] in cited and same_language
             kind = "answer"
         else:  # "yes" (not in documents) and "role" (HR-only docs are not in this index yet)
             ok = not res["grounded"]
@@ -54,11 +55,13 @@ def main() -> None:
         print(f"   sources:  {', '.join(cited) or '-'}")
         if not ok:
             print(f"   search found: {', '.join(res.get('retrieved', [])) or '(nothing)'}")
+            if not same_language:
+                print("   !! answer is not in the question's language")
         out.append({"lang": r["lang"], "question": r["question"], "kind": kind,
                     "expected_answer": r["expected_answer"], "answer": res["answer"],
                     "expected_source": r["expected_source"], "sources": " | ".join(cited),
                     "search_found": " | ".join(res.get("retrieved", [])),
-                    "pass": ok})
+                    "same_language": same_language, "pass": ok})
 
     answer_rows = [o for o in out if o["kind"] == "answer"]
     defer_rows = [o for o in out if o["kind"] == "defer"]
@@ -66,7 +69,7 @@ def main() -> None:
     d = sum(o["pass"] for o in defer_rows)
     print("\n| Check | Result |")
     print("|---|---|")
-    print(f"| Answered with the correct source cited | {a}/{len(answer_rows)} ({a/len(answer_rows):.0%}) |")
+    print(f"| Answered, correct source, same language | {a}/{len(answer_rows)} ({a/len(answer_rows):.0%}) |")
     print(f"| Correctly said 'contact HR' | {d}/{len(defer_rows)} ({d/len(defer_rows):.0%}) |")
     with RESULTS.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=list(out[0].keys()))

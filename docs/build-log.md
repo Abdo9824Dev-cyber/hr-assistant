@@ -32,3 +32,5 @@
 - Cloud Run service hr-api: private (IAM-only), min 0 / max 2 instances, runs as hr-assistant-sa
   with least-privilege roles (aiplatform.user, discoveryengine.viewer).
 - Verified: /health and /ask work with an identity token; 403 without one.
+- Final Day 6 config: gemini-2.5-flash, thinking MEDIUM, explicit answer language.
+  Smoke test: 27/27 answered with correct source AND same language; 8/8 correct refusals; ~3 s median.
