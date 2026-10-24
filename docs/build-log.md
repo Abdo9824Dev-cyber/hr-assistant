@@ -34,3 +34,15 @@
 - Verified: /health and /ask work with an identity token; 403 without one.
 - Final Day 6 config: gemini-2.5-flash, thinking MEDIUM, explicit answer language.
   Smoke test: 27/27 answered with correct source AND same language; 8/8 correct refusals; ~3 s median.
+
+## Day 7 - Bilingual polish and verified citations
+- Verified quotes: Gemini returns an exact quote per source; code accepts it only if it appears in the
+  source (normalising Arabic diacritics/tatweel). Result: 28/28 citations verified.
+- Bilingual policy titles (doc_titles.json); UI shows policy names in the page language.
+- Yes/no rule: fixed "Do I need a report?" -> now "No, one day without a report is allowed twice a year".
+- Bilingual pairs test (same 12 questions in EN + AR) found 1 gap: English "absent" missed the Arabic
+  Attendance policy. Fix: bilingual search (translate with gemini-2.5-flash-lite, search both languages in
+  parallel, merge). Pairs 11/12 -> 12/12. Bonus: remote-work answer now includes the Ramadan rule
+  from a second (Arabic) policy.
+- Smoke test: 27/27 answered (source + language), 8/8 refusals. Latency 3.7 s median (+0.8 s).
+- Open for Day 13: "only with conditions" answers start with a bare Yes/No (#6, #11).

@@ -53,6 +53,9 @@ def main() -> None:
         print(f"   expected: {r['expected_answer']}")
         print(f"   answer:   {res['answer']}")
         print(f"   sources:  {', '.join(cited) or '-'}")
+        for src in res["sources"]:
+            mark = "verified quote" if src.get("verified") else "NOT verified"
+            print(f"   {mark}: {src['snippet'][:110]}")
         if not ok:
             print(f"   search found: {', '.join(res.get('retrieved', [])) or '(nothing)'}")
             if not same_language:
@@ -61,7 +64,9 @@ def main() -> None:
                     "expected_answer": r["expected_answer"], "answer": res["answer"],
                     "expected_source": r["expected_source"], "sources": " | ".join(cited),
                     "search_found": " | ".join(res.get("retrieved", [])),
-                    "same_language": same_language, "pass": ok})
+                    "same_language": same_language,
+                    "quotes_verified": sum(x.get("verified", False) for x in res["sources"]),
+                    "pass": ok})
 
     answer_rows = [o for o in out if o["kind"] == "answer"]
     defer_rows = [o for o in out if o["kind"] == "defer"]
@@ -71,6 +76,10 @@ def main() -> None:
     print("|---|---|")
     print(f"| Answered, correct source, same language | {a}/{len(answer_rows)} ({a/len(answer_rows):.0%}) |")
     print(f"| Correctly said 'contact HR' | {d}/{len(defer_rows)} ({d/len(defer_rows):.0%}) |")
+    cited_total = sum(len(o["sources"].split(" | ")) for o in answer_rows if o["sources"])
+    verified_total = sum(o["quotes_verified"] for o in answer_rows)
+    if cited_total:
+        print(f"| Citations with a verified exact quote | {verified_total}/{cited_total} ({verified_total/cited_total:.0%}) |")
     with RESULTS.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=list(out[0].keys()))
         w.writeheader(); w.writerows(out)

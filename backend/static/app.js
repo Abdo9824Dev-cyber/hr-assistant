@@ -12,6 +12,8 @@ const I18N = {
     newChat: "New chat",
     copy: "Copy",
     copied: "Copied",
+    quoteLabel: "Exact text from the policy",
+    quoteUnverified: "Related section of the policy",
     disclaimer: "Answers are for guidance. Confirm important decisions with HR.",
     errNetwork: "The assistant didn't respond. Check your connection and ask again.",
     errLimit: "That's many questions in one minute. Wait a moment, then ask again.",
@@ -34,6 +36,8 @@ const I18N = {
     newChat: "محادثة جديدة",
     copy: "نسخ",
     copied: "تم النسخ",
+    quoteLabel: "النص كما ورد في السياسة",
+    quoteUnverified: "الجزء المرتبط من السياسة",
     disclaimer: "الإجابات للاسترشاد. يرجى التأكد من القرارات المهمة مع الموارد البشرية.",
     errNetwork: "لم يصل رد من المساعد. تحقق من الاتصال ثم اسأل مرة أخرى.",
     errLimit: "أسئلة كثيرة خلال دقيقة واحدة. انتظر قليلاً ثم اسأل مرة أخرى.",
@@ -110,6 +114,11 @@ function applyLang() {
   $("lang").setAttribute("lang", lang === "ar" ? "en" : "ar");
   $("new-chat").title = t("newChat");
   document.querySelectorAll(".copy .label").forEach((el) => { el.textContent = t("copy"); });
+  document.querySelectorAll(".chip-title").forEach((el) => { el.textContent = el.dataset[lang]; });
+  document.querySelectorAll(".excerpt figcaption").forEach((el) => {
+    const verified = el.dataset.key === "quoteLabel";
+    el.replaceChildren(...(verified ? [icon("check")] : []), document.createTextNode(t(el.dataset.key)));
+  });
   document.title = `${t("title")} · ${t("company")}`;
   renderTopics();
   paintThemeButton();
@@ -197,11 +206,22 @@ function fillBot(li, data) {
       const det = document.createElement("details");
       det.className = "chip";
       const sum = document.createElement("summary");
-      sum.append(icon("doc"), document.createTextNode(prettySource(s.title)));
-      const ex = document.createElement("p");
-      ex.className = "excerpt";
-      ex.dir = "auto";
-      ex.textContent = s.snippet;
+      const title = (lang === "ar" ? s.title_ar : s.title_en) || prettySource(s.title);
+      const label = document.createElement("span");
+      label.className = "chip-title";
+      label.dataset.en = s.title_en || prettySource(s.title);
+      label.dataset.ar = s.title_ar || prettySource(s.title);
+      label.textContent = title;
+      sum.append(icon("doc"), label);
+      const ex = document.createElement("figure");
+      ex.className = "excerpt" + (s.verified ? " verified" : "");
+      const cap = document.createElement("figcaption");
+      cap.dataset.key = s.verified ? "quoteLabel" : "quoteUnverified";
+      cap.replaceChildren(...(s.verified ? [icon("check")] : []), document.createTextNode(t(cap.dataset.key)));
+      const quote = document.createElement("blockquote");
+      quote.dir = "auto";
+      quote.textContent = s.snippet;
+      ex.append(cap, quote);
       det.append(sum, ex);
       box.appendChild(det);
     });

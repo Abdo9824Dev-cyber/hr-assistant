@@ -38,7 +38,7 @@ def client_ip(request: Request) -> str:
 
 
 limiter = Limiter(key_func=client_ip)
-app = FastAPI(title="HR Assistant API", version="0.6.0",
+app = FastAPI(title="HR Assistant API", version="0.7.0",
               description="Answers employee questions from company HR policies, in Arabic or English.")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -55,7 +55,10 @@ class Question(BaseModel):
 
 class Source(BaseModel):
     title: str
+    title_en: str
+    title_ar: str
     snippet: str
+    verified: bool
 
 
 class AnswerOut(BaseModel):
@@ -89,7 +92,8 @@ def ask_route(request: Request, q: Question, x_access_code: str | None = Header(
              result["lang"], result["grounded"], len(result["sources"]), latency)
     return AnswerOut(
         answer=result["answer"],
-        sources=[Source(title=s["title"], snippet=s["snippet"]) for s in result["sources"]],
+        sources=[Source(title=s["title"], title_en=s["title_en"], title_ar=s["title_ar"],
+                        snippet=s["snippet"], verified=s["verified"]) for s in result["sources"]],
         grounded=result["grounded"],
         lang=result["lang"],
         disclaimer=DISCLAIMER[result["lang"]],

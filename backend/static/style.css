@@ -190,7 +190,17 @@ svg { width: 20px; height: 20px; flex: none; }
 .chip .excerpt {
   margin: 8px 0 0; padding: 10px 14px;
   background: var(--surface-2); border-radius: var(--r-md);
-  font-size: .85rem; color: var(--muted);
+}
+.excerpt figcaption {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .76rem; font-weight: 600; color: var(--muted); margin-bottom: 4px;
+}
+.excerpt.verified figcaption { color: var(--brand); }
+.excerpt figcaption svg { width: 14px; height: 14px; }
+.excerpt blockquote {
+  margin: 0; padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--lamp);
+  font-size: .9rem; color: var(--ink);
   white-space: pre-wrap; unicode-bidi: plaintext;
 }
 .actions { display: flex; justify-content: flex-end; margin-top: 6px; }

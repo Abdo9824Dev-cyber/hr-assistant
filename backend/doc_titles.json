@@ -1,0 +1,17 @@
+{
+  "EN-01_Annual_Leave_Policy": {"en": "Annual Leave Policy", "ar": "سياسة الإجازة السنوية"},
+  "EN-02_Remote_Work_Policy": {"en": "Remote and Hybrid Work Policy", "ar": "سياسة العمل عن بعد والعمل المرن"},
+  "EN-03_Expenses_and_Business_Travel": {"en": "Business Travel and Expenses Policy", "ar": "سياسة السفر والمصروفات"},
+  "EN-04_Code_of_Conduct": {"en": "Code of Conduct", "ar": "مدونة قواعد السلوك"},
+  "EN-05_Training_and_Development": {"en": "Training and Development Policy", "ar": "سياسة التدريب والتطوير"},
+  "EN-06_Overtime_Policy": {"en": "Overtime Policy", "ar": "سياسة العمل الإضافي"},
+  "AR-01_Attendance_Policy": {"en": "Attendance Policy", "ar": "سياسة الحضور والانصراف"},
+  "AR-02_Probation_Policy": {"en": "Probation Policy", "ar": "سياسة فترة التجربة"},
+  "AR-03_Sick_Leave_Policy": {"en": "Sick Leave Policy", "ar": "سياسة الإجازات المرضية"},
+  "AR-04_End_of_Service_Policy": {"en": "Resignation and End of Service Policy", "ar": "سياسة إنهاء الخدمة ومكافأة نهاية الخدمة"},
+  "AR-05_Special_Leave_Policy": {"en": "Special Leave Policy", "ar": "سياسة الإجازات الخاصة"},
+  "AR-06_Ramadan_Working_Hours": {"en": "Ramadan Working Hours", "ar": "سياسة ساعات العمل في رمضان"},
+  "CONF-EN-01_Salary_Grades_and_Allowances": {"en": "Salary Grades and Allowances", "ar": "سلم الرواتب والبدلات"},
+  "CONF-EN-02_Performance_and_Bonus": {"en": "Performance Review and Bonus Policy", "ar": "سياسة تقييم الأداء والمكافأة السنوية"},
+  "CONF-AR-01_Disciplinary_Procedure": {"en": "Disciplinary Procedure", "ar": "إجراءات الجزاءات التأديبية"}
+}
