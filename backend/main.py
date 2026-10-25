@@ -1,51 +1,88 @@
-"""HR Assistant web service: API + chat page in one Cloud Run service.
+"""HR Assistant web service: API + chat page in one Cloud Run service, with sign-in and roles (Day 8).
 
 Endpoints:
     GET  /         -> the chat page (static/index.html)
-    GET  /health   -> status, and whether an access code is required / accepted
-    POST /ask      -> {"question": "..."} returns answer, sources, grounded, lang
+    GET  /config   -> public sign-in settings for the page (Identity Platform API key, auth domain)
+    GET  /health   -> status
+    GET  /me       -> who is signed in and their role               (needs a valid sign-in token)
+    POST /ask      -> {"question": "..."} answer for the user's role (needs a valid sign-in token)
+
+Sign-in: the page signs users in with Google Identity Platform and sends "Authorization: Bearer <ID token>".
+This server verifies the token's signature and reads the role from it. Roles are set by an admin
+(infra/users.py); users cannot choose or edit their own role.
+
+Local development without sign-in: set AUTH_DISABLED=1 (and optionally DEV_ROLE=hr_admin).
+Never set AUTH_DISABLED on Cloud Run.
 
 Run locally (from backend/, with .venv and .env loaded):
     uvicorn main:app --reload --port 8080   then open http://localhost:8080
 """
-import hmac
 import logging
 import os
 import pathlib
 import time
 
-from fastapi import FastAPI, Header, HTTPException, Request
+import firebase_admin
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
+from firebase_admin import auth as fb_auth
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from messages import DISCLAIMER
-from rag import MODEL, ask
+from rag import MODEL, PROJECT, ask
 
 log = logging.getLogger("hr-api")
 logging.basicConfig(level=logging.INFO)
 
 RATE_LIMIT = os.environ.get("RATE_LIMIT", "20/minute")
-ACCESS_CODE = os.environ.get("ACCESS_CODE", "")   # empty = no code required (local development)
+AUTH_DISABLED = os.environ.get("AUTH_DISABLED", "").lower() in ("1", "true", "yes")
+DEV_ROLE = os.environ.get("DEV_ROLE", "employee")
+FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
+FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", f"{PROJECT}.firebaseapp.com")
+ROLES = {"employee", "hr_admin"}
 STATIC_DIR = pathlib.Path(__file__).parent / "static"
 
+if not AUTH_DISABLED:
+    firebase_admin.initialize_app(options={"projectId": PROJECT})
+elif os.environ.get("K_SERVICE"):  # K_SERVICE is set by Cloud Run
+    log.warning("AUTH_DISABLED is set on Cloud Run - every visitor is treated as %s!", DEV_ROLE)
 
-def client_ip(request: Request) -> str:
-    """Real visitor IP. Cloud Run puts it first in X-Forwarded-For."""
+
+def client_key(request: Request) -> str:
+    """Rate-limit per signed-in user; fall back to the visitor's IP (first X-Forwarded-For entry on Cloud Run)."""
+    uid = getattr(request.state, "uid", None)
+    if uid:
+        return f"user:{uid}"
     forwarded = request.headers.get("x-forwarded-for", "")
     return forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
 
 
-limiter = Limiter(key_func=client_ip)
-app = FastAPI(title="HR Assistant API", version="0.7.0",
+limiter = Limiter(key_func=client_key)
+app = FastAPI(title="HR Assistant API", version="0.8.0",
               description="Answers employee questions from company HR policies, in Arabic or English.")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-def code_ok(code: str | None) -> bool:
-    return not ACCESS_CODE or hmac.compare_digest((code or "").encode(), ACCESS_CODE.encode())
+def current_user(request: Request) -> dict:
+    """Verify the sign-in token and return the user. The role comes from the token, never from the request."""
+    if AUTH_DISABLED:
+        user = {"uid": "dev", "email": "developer@localhost", "role": DEV_ROLE}
+    else:
+        header = request.headers.get("authorization", "")
+        if not header.lower().startswith("bearer "):
+            raise HTTPException(status_code=401, detail="Sign-in required.")
+        try:
+            claims = fb_auth.verify_id_token(header.split(" ", 1)[1].strip())
+        except Exception:
+            raise HTTPException(status_code=401, detail="Your session has expired. Please sign in again.")
+        role = claims.get("role", "employee")
+        user = {"uid": claims["uid"], "email": claims.get("email", ""),
+                "role": role if role in ROLES else "employee"}
+    request.state.uid = user["uid"]
+    return user
 
 
 class Question(BaseModel):
@@ -70,26 +107,35 @@ class AnswerOut(BaseModel):
     latency_ms: int
 
 
+@app.get("/config")
+def config():
+    """Public settings the page needs to show the sign-in form (these values are not secrets)."""
+    return {"auth_disabled": AUTH_DISABLED, "api_key": FIREBASE_API_KEY, "auth_domain": FIREBASE_AUTH_DOMAIN}
+
+
 @app.get("/health")
-def health(x_access_code: str | None = Header(default=None)):
-    return {"ok": True, "model": MODEL,
-            "access_code_required": bool(ACCESS_CODE), "access_ok": code_ok(x_access_code)}
+def health():
+    return {"ok": True, "model": MODEL, "auth": "disabled" if AUTH_DISABLED else "required"}
+
+
+@app.get("/me")
+def me(user: dict = Depends(current_user)):
+    return {"email": user["email"], "role": user["role"]}
 
 
 @app.post("/ask", response_model=AnswerOut)
 @limiter.limit(RATE_LIMIT)
-def ask_route(request: Request, q: Question, x_access_code: str | None = Header(default=None)):
-    if not code_ok(x_access_code):
-        raise HTTPException(status_code=401, detail="Access code required.")
+def ask_route(request: Request, q: Question, user: dict = Depends(current_user)):
     start = time.perf_counter()
     try:
-        result = ask(q.question.strip())
+        result = ask(q.question.strip(), role=user["role"])
     except Exception:
         log.exception("ask failed")  # details stay in our logs, never sent to the user
         raise HTTPException(status_code=503, detail="The assistant is temporarily unavailable. Please try again.")
     latency = int((time.perf_counter() - start) * 1000)
-    log.info("ask lang=%s grounded=%s sources=%d latency_ms=%d",  # metadata only, never the question
-             result["lang"], result["grounded"], len(result["sources"]), latency)
+    # Privacy: metadata only - never the question, the answer or the email address.
+    log.info("ask role=%s lang=%s grounded=%s sources=%d latency_ms=%d",
+             user["role"], result["lang"], result["grounded"], len(result["sources"]), latency)
     return AnswerOut(
         answer=result["answer"],
         sources=[Source(title=s["title"], title_en=s["title_en"], title_ar=s["title_ar"],
@@ -101,5 +147,5 @@ def ask_route(request: Request, q: Question, x_access_code: str | None = Header(
     )
 
 
-# The chat page. Mounted last so /health, /ask and /docs keep working.
+# The chat page. Mounted last so the API routes above keep working.
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

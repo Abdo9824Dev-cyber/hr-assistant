@@ -18,10 +18,21 @@ const I18N = {
     errNetwork: "The assistant didn't respond. Check your connection and ask again.",
     errLimit: "That's many questions in one minute. Wait a moment, then ask again.",
     errServer: "The assistant is unavailable right now. Ask again in a minute.",
-    gateTitle: "Enter the access code",
-    gateHelp: "Your HR team shares this code with employees.",
-    gateButton: "Continue",
-    gateWrong: "That code didn't work. Check it and try again.",
+    signInTitle: "Sign in",
+    signInHelp: "Use the work email and password your HR team gave you.",
+    email: "Work email",
+    password: "Password",
+    signIn: "Sign in",
+    forgot: "Forgot password?",
+    resetSent: "If this email has an account, a reset link is on its way. Check your inbox.",
+    needEmail: "Enter your work email first, then select Forgot password.",
+    errWrong: "Email or password is incorrect. Check them and try again.",
+    errMany: "Too many attempts. Wait a few minutes, then try again.",
+    errDisabled: "This account is turned off. Contact HR.",
+    errSignIn: "Sign-in didn't work. Check your connection and try again.",
+    sessionExpired: "Your session ended. Sign in again to continue.",
+    signOut: "Sign out",
+    roleAdmin: "HR admin",
     switchTo: "العربية",
     themeToDark: "Switch to dark mode",
     themeToLight: "Switch to light mode",
@@ -42,10 +53,21 @@ const I18N = {
     errNetwork: "لم يصل رد من المساعد. تحقق من الاتصال ثم اسأل مرة أخرى.",
     errLimit: "أسئلة كثيرة خلال دقيقة واحدة. انتظر قليلاً ثم اسأل مرة أخرى.",
     errServer: "المساعد غير متاح الآن. اسأل مرة أخرى بعد دقيقة.",
-    gateTitle: "أدخل رمز الدخول",
-    gateHelp: "يشارك فريق الموارد البشرية هذا الرمز مع الموظفين.",
-    gateButton: "متابعة",
-    gateWrong: "الرمز غير صحيح. تحقق منه وحاول مرة أخرى.",
+    signInTitle: "تسجيل الدخول",
+    signInHelp: "استخدم بريد العمل وكلمة المرور التي أرسلها لك فريق الموارد البشرية.",
+    email: "بريد العمل",
+    password: "كلمة المرور",
+    signIn: "دخول",
+    forgot: "نسيت كلمة المرور؟",
+    resetSent: "إذا كان لهذا البريد حساب، فقد أرسلنا رابط إعادة التعيين. تحقق من بريدك.",
+    needEmail: "اكتب بريد العمل أولاً، ثم اختر نسيت كلمة المرور.",
+    errWrong: "البريد أو كلمة المرور غير صحيحة. تحقق منهما وحاول مرة أخرى.",
+    errMany: "محاولات كثيرة. انتظر بضع دقائق ثم حاول مرة أخرى.",
+    errDisabled: "هذا الحساب موقوف. تواصل مع الموارد البشرية.",
+    errSignIn: "لم يتم تسجيل الدخول. تحقق من الاتصال وحاول مرة أخرى.",
+    sessionExpired: "انتهت الجلسة. سجّل الدخول مرة أخرى للمتابعة.",
+    signOut: "تسجيل الخروج",
+    roleAdmin: "مسؤول الموارد البشرية",
     switchTo: "English",
     themeToDark: "التبديل إلى الوضع الداكن",
     themeToLight: "التبديل إلى الوضع الفاتح",
@@ -69,7 +91,10 @@ const store = {
 };
 
 let lang = store.get("lang") || ((navigator.language || "").startsWith("ar") ? "ar" : "en");
-let accessCode = store.getSession("accessCode") || "";
+let authDisabled = false;     // local development only
+let fbAuth = null;            // Firebase Auth instance, once loaded
+let fb = {};                  // Firebase Auth functions
+let role = "employee";
 let busy = false;
 const t = (key) => I18N[lang][key];
 
@@ -120,6 +145,11 @@ function applyLang() {
     el.replaceChildren(...(verified ? [icon("check")] : []), document.createTextNode(t(el.dataset.key)));
   });
   document.title = `${t("title")} · ${t("company")}`;
+  $("role-badge").textContent = t("roleAdmin");
+  const notice = $("signin-notice");
+  if (notice && notice.dataset.key && !notice.hidden) notice.textContent = t(notice.dataset.key);
+  $("sign-out").title = t("signOut");
+  $("sign-out").setAttribute("aria-label", t("signOut"));
   renderTopics();
   paintThemeButton();
 }
@@ -268,10 +298,10 @@ async function send(question) {
   try {
     const res = await fetch("/ask", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Access-Code": accessCode },
+      headers: { "Content-Type": "application/json", ...(await authHeader()) },
       body: JSON.stringify({ question }),
     });
-    if (res.status === 401) { li.previousElementSibling?.remove(); li.remove(); openGate(); return; }
+    if (res.status === 401) { li.previousElementSibling?.remove(); li.remove(); openSignIn("sessionExpired"); return; }
     if (res.status === 429) return failBot(li, "errLimit");
     if (!res.ok) return failBot(li, "errServer");
     fillBot(li, await res.json());
@@ -311,28 +341,99 @@ $("q").addEventListener("input", (e) => {   // grow with the text
   e.target.style.height = `${e.target.scrollHeight}px`;
 });
 
-/* ---------- Access code ---------- */
-function openGate(wrong = false) {
-  $("gate-error").hidden = !wrong;
-  $("code").value = "";
-  if (!$("gate").open) $("gate").showModal();
-  $("code").focus();
+/* ---------- Sign-in (Google Identity Platform) ---------- */
+const FIREBASE_SDK = "https://www.gstatic.com/firebasejs/10.12.2";
+
+async function authHeader() {
+  if (authDisabled || !fbAuth || !fbAuth.currentUser) return {};
+  return { Authorization: `Bearer ${await fbAuth.currentUser.getIdToken()}` }; // refreshed automatically
 }
-async function checkAccess() {
+
+function setNotice(key, isError = true) {
+  const box = $("signin-notice");
+  box.hidden = !key;
+  box.classList.toggle("ok", !isError);
+  if (key) { box.dataset.key = key; box.textContent = t(key); }
+}
+
+function openSignIn(noticeKey = "") {
+  setNotice(noticeKey);
+  if (!$("signin").open) $("signin").showModal();
+  ($("email").value ? $("password") : $("email")).focus();
+}
+
+function errorKey(code = "") {
+  if (["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email"].includes(code)) return "errWrong";
+  if (code === "auth/too-many-requests") return "errMany";
+  if (code === "auth/user-disabled") return "errDisabled";
+  return "errSignIn";
+}
+
+async function loadProfile() {
   try {
-    const res = await fetch("/health", { headers: { "X-Access-Code": accessCode } });
-    const info = await res.json();
-    if (info.access_code_required && !info.access_ok) openGate(Boolean(accessCode));
-  } catch { /* offline: the first question will show the error */ }
+    const res = await fetch("/me", { headers: await authHeader() });
+    if (!res.ok) throw new Error(String(res.status));
+    role = (await res.json()).role;
+  } catch { role = "employee"; }
+  $("role-badge").hidden = role !== "hr_admin";
 }
-$("gate-form").addEventListener("submit", (e) => {
+
+function clearChat() {
+  $("messages").replaceChildren();
+  $("empty").hidden = false;
+  $("new-chat").hidden = true;
+}
+
+async function initAuth() {
+  const cfg = await (await fetch("/config")).json();
+  authDisabled = cfg.auth_disabled;
+  if (authDisabled) { await loadProfile(); return; }
+
+  const { initializeApp } = await import(`${FIREBASE_SDK}/firebase-app.js`);
+  fb = await import(`${FIREBASE_SDK}/firebase-auth.js`);
+  fbAuth = fb.getAuth(initializeApp({ apiKey: cfg.api_key, authDomain: cfg.auth_domain }));
+
+  fb.onAuthStateChanged(fbAuth, async (user) => {
+    $("sign-out").hidden = !user;
+    if (user) {
+      $("sign-out").title = `${t("signOut")} (${user.email})`;
+      if ($("signin").open) $("signin").close();
+      await loadProfile();
+      $("q").focus();
+    } else {
+      role = "employee";
+      $("role-badge").hidden = true;
+      clearChat();
+      openSignIn();
+    }
+  });
+}
+
+$("signin-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  accessCode = $("code").value.trim();
-  store.setSession("accessCode", accessCode);
-  $("gate").close();
-  checkAccess();
+  if (!fbAuth) return;
+  const button = $("signin-button");
+  button.disabled = true;
+  setNotice("");
+  try {
+    await fb.signInWithEmailAndPassword(fbAuth, $("email").value.trim(), $("password").value);
+    $("password").value = "";
+  } catch (err) {
+    setNotice(errorKey(err.code));
+  } finally {
+    button.disabled = false;
+  }
 });
-$("gate").addEventListener("cancel", (e) => e.preventDefault()); // code is required
+
+$("forgot").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  if (!email) { setNotice("needEmail"); $("email").focus(); return; }
+  try { await fb.sendPasswordResetEmail(fbAuth, email); } catch { /* same message either way */ }
+  setNotice("resetSent", false); // never reveal whether the account exists
+});
+
+$("sign-out").addEventListener("click", () => fbAuth && fb.signOut(fbAuth));
+$("signin").addEventListener("cancel", (e) => e.preventDefault()); // sign-in is required
 
 applyLang();
-checkAccess();
+initAuth().catch(() => openSignIn("errSignIn"));

@@ -22,6 +22,7 @@
     <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 9V6.5A2.5 2.5 0 0 0 12.5 4h-6A2.5 2.5 0 0 0 4 6.5v6A2.5 2.5 0 0 0 6.5 15H9"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h3.5A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5H14"/><path d="M10 8l-4 4 4 4M6 12h9"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
     <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5"/></symbol>
     <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></symbol>
@@ -39,9 +40,11 @@
       </div>
     </div>
     <div class="tools">
+      <span id="role-badge" class="badge" hidden></span>
       <button id="new-chat" class="icon-btn" type="button" hidden><svg><use href="#i-plus"/></svg><span class="label" data-i18n="newChat"></span></button>
       <button id="theme" class="icon-btn round" type="button"><svg><use href="#i-moon"/></svg></button>
       <button id="lang" class="pill-btn" type="button"></button>
+      <button id="sign-out" class="icon-btn round" type="button" hidden><svg><use href="#i-logout"/></svg></button>
     </div>
   </header>
 
@@ -64,18 +67,21 @@
     <p class="disclaimer" data-i18n="disclaimer"></p>
   </footer>
 
-  <dialog id="gate" class="gate">
-    <form id="gate-form" method="dialog">
+  <dialog id="signin" class="gate">
+    <form id="signin-form" novalidate>
       <span class="mark"><svg><use href="#i-lamp"/></svg></span>
-      <h2 data-i18n="gateTitle"></h2>
-      <p data-i18n="gateHelp"></p>
-      <label for="code" class="sr-only" data-i18n="gateTitle"></label>
-      <input id="code" type="password" autocomplete="off" required>
-      <p id="gate-error" class="gate-error" hidden data-i18n="gateWrong"></p>
-      <button type="submit" class="primary" data-i18n="gateButton"></button>
+      <h2 data-i18n="signInTitle"></h2>
+      <p data-i18n="signInHelp"></p>
+      <label class="field"><span data-i18n="email"></span>
+        <input id="email" type="email" autocomplete="username" dir="ltr" required></label>
+      <label class="field"><span data-i18n="password"></span>
+        <input id="password" type="password" autocomplete="current-password" dir="ltr" required></label>
+      <p id="signin-notice" class="notice" role="alert" hidden></p>
+      <button id="signin-button" type="submit" class="primary" data-i18n="signIn"></button>
+      <button id="forgot" type="button" class="link" data-i18n="forgot"></button>
     </form>
   </dialog>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

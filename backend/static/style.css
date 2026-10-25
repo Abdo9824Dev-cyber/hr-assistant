@@ -265,7 +265,19 @@ svg { width: 20px; height: 20px; flex: none; }
   padding: 11px 14px; margin-bottom: 12px; text-align: center; letter-spacing: .05em;
 }
 .gate input:focus { border-color: var(--brand); outline: none; box-shadow: 0 0 0 4px var(--lamp-soft); }
-.gate .gate-error { color: var(--danger); margin-top: -4px; }
+.gate .field { display: block; text-align: start; font-size: .85rem; font-weight: 500; margin-bottom: 4px; }
+.gate .field input { margin-top: 4px; text-align: start; letter-spacing: normal; }
+.gate .notice { color: var(--danger); font-size: .88rem; margin: -2px 0 12px; text-align: start; }
+.gate .notice.ok { color: var(--brand); }
+.gate .link {
+  margin-top: 10px; background: none; border: 0; padding: 4px;
+  color: var(--brand); font-size: .88rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+.badge {
+  display: inline-flex; align-items: center; height: 28px; padding: 0 10px;
+  border-radius: 999px; background: var(--lamp-soft); color: var(--ink);
+  font-size: .78rem; font-weight: 600; white-space: nowrap;
+}
 .primary {
   width: 100%; border: 0; border-radius: var(--r-md); padding: 11px 16px; cursor: pointer;
   font-weight: 600; background: linear-gradient(145deg, var(--brand), var(--brand-2)); color: var(--on-brand);
@@ -273,6 +285,7 @@ svg { width: 20px; height: 20px; flex: none; }
 
 /* ---------- Small screens ---------- */
 @media (max-width: 560px) {
+  .badge { display: none; }
   .topics { grid-template-columns: 1fr; }
   .brand-sub { display: none; }
   .icon-btn .label { display: none; }

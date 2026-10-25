@@ -46,3 +46,13 @@
   from a second (Arabic) policy.
 - Smoke test: 27/27 answered (source + language), 8/8 refusals. Latency 3.7 s median (+0.8 s).
 - Open for Day 13: "only with conditions" answers start with a bare Yes/No (#6, #11).
+
+## Day 8 - Sign-in and roles
+- Google Identity Platform (email/password); public sign-up disabled; accounts created by admin script
+  (infra/users.py) with a role claim: employee | hr_admin.
+- Backend verifies the ID token on every request; role read from the signed token only
+  (role sent in the request is ignored; unknown role -> employee).
+- Confidential HR files in a separate index (hr-confidential); employees' searches can't reach it.
+  Employees get the same "contact HR" reply, so restricted documents aren't revealed.
+- roles_test: ../12 checks passed (employee refused + admin answered for 4 confidential questions).
+- Access code removed; /ask returns 401 without sign-in.

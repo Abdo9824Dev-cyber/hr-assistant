@@ -8,6 +8,7 @@ Usage (from the project root, with .venv and .env loaded):
     python backend/rag.py "How many days of annual leave do I get?"
     python backend/rag.py "كم مدة فترة التجربة؟"
     python backend/rag.py --debug "question"     # also prints what search found
+    python backend/rag.py --admin "question"     # answer as an HR admin (includes confidential files)
 """
 import json
 import os
@@ -29,7 +30,14 @@ from messages import DEFER
 TITLES = json.loads((pathlib.Path(__file__).parent / "doc_titles.json").read_text(encoding="utf-8"))
 
 PROJECT = os.environ["PROJECT_ID"]
-ENGINE = os.environ["SEARCH_ENGINE_ID"]
+ENGINE = os.environ["SEARCH_ENGINE_ID"]                          # company policies (all employees)
+CONFIDENTIAL_ENGINE = os.environ.get("CONFIDENTIAL_ENGINE_ID", "")  # HR-only documents
+
+# Which search indexes each role may use. The backend decides this from the verified login token.
+ENGINES_BY_ROLE = {
+    "employee": [ENGINE],
+    "hr_admin": [ENGINE] + ([CONFIDENTIAL_ENGINE] if CONFIDENTIAL_ENGINE else []),
+}
 SEARCH_LOCATION = os.environ.get("SEARCH_LOCATION", "global")
 THRESHOLD = os.environ.get("SEARCH_THRESHOLD", "LOWEST").upper()
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
@@ -47,9 +55,9 @@ llm = genai.Client(
     vertexai=True, project=PROJECT, location=GEMINI_LOCATION,
     http_options=types.HttpOptions(
         timeout=GEMINI_TIMEOUT_MS,
-        # one quick retry if Gemini is busy (429) or briefly unavailable (503)
+        # one quick retry if Gemini is busy (429), briefly unavailable (503) or timed out on Google's side (504)
         retry_options=types.HttpRetryOptions(attempts=2, initial_delay=1.0, max_delay=3.0,
-                                             http_status_codes=[429, 503]),
+                                             http_status_codes=[429, 503, 504]),
     ),
 )
 _endpoint = ("discoveryengine.googleapis.com" if SEARCH_LOCATION == "global"
@@ -191,27 +199,37 @@ def _merge(*result_lists: list) -> list:
     return list(merged.values())[:MAX_DOCS]
 
 
-def retrieve(question: str, engine_id: str = ENGINE, translated: list | None = None) -> list:
-    """Search in the question's language and (in parallel) in the other language, then merge.
-    If `translated` is a list, the translation used is appended to it (for debugging/tests)."""
-    if not BILINGUAL_SEARCH:
-        return _search_once(question, engine_id)
+def retrieve(question: str, engines: list | None = None, translated: list | None = None) -> list:
+    """Search every allowed index, in the question's language and (in parallel) in the other language,
+    then merge the ranked results. If `translated` is a list, the translation used is appended to it."""
+    engines = engines or [ENGINE]
+    with ThreadPoolExecutor(max_workers=2 * len(engines) + 1) as pool:
+        original = [pool.submit(_search_once, question, e) for e in engines]
+        translation = pool.submit(translate_question, question, not is_arabic(question)) if BILINGUAL_SEARCH else None
+        other = []
+        if translation is not None:
+            try:
+                t = translation.result()
+            except Exception:
+                t = ""
+            if translated is not None:
+                translated.append(t)
+            if t and t != question:
+                other = [pool.submit(_search_once, t, e) for e in engines]
 
-    def other_language_search():
-        t = translate_question(question, to_arabic=not is_arabic(question))
-        if translated is not None:
-            translated.append(t)
-        return _search_once(t, engine_id) if t and t != question else []
-
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        first = pool.submit(_search_once, question, engine_id)
-        second = pool.submit(other_language_search)
-        original = first.result()
-        try:
-            other = second.result()
-        except Exception:  # the extra search is a bonus; never fail the question because of it
-            other = []
-    return _merge(original, other)
+        def safe(f, required):
+            try:
+                return f.result()
+            except Exception:
+                if required:
+                    raise
+                return []  # extra searches are a bonus; never fail the question because of them
+        lists = []
+        for i in range(len(engines)):
+            lists.append(safe(original[i], required=(i == 0)))
+            if other:
+                lists.append(safe(other[i], required=False))
+    return _merge(*lists)
 
 
 def _thinking_config(model: str):
@@ -248,11 +266,12 @@ def _model_deferred(answer: str) -> bool:
     return any(DEFER[lang].split(".")[0] in answer for lang in DEFER)
 
 
-def ask(question: str, engine_id: str = ENGINE, debug: bool = False) -> dict:
-    """Answer one question. Returns answer, sources, grounded flag and language."""
+def ask(question: str, role: str = "employee", debug: bool = False) -> dict:
+    """Answer one question for a user with the given role ("employee" or "hr_admin")."""
     lang = "ar" if is_arabic(question) else "en"
+    engines = ENGINES_BY_ROLE.get(role, ENGINES_BY_ROLE["employee"])  # unknown role -> least access
     translated = []
-    found = retrieve(question, engine_id, translated)
+    found = retrieve(question, engines, translated)
     if debug:
         print("also searched:", translated[0] if translated else "-", file=sys.stderr)
         print("search found:", [d["name"] for d in found], file=sys.stderr)
@@ -313,7 +332,8 @@ def ask(question: str, engine_id: str = ENGINE, debug: bool = False) -> dict:
 if __name__ == "__main__":
     args = sys.argv[1:]
     debug = "--debug" in args
-    args = [a for a in args if a != "--debug"]
+    role = "hr_admin" if "--admin" in args else "employee"
+    args = [a for a in args if a not in ("--debug", "--admin")]
     if not args:
-        sys.exit('Usage: python backend/rag.py [--debug] "your question"')
-    print(json.dumps(ask(" ".join(args), debug=debug), ensure_ascii=False, indent=2))
+        sys.exit('Usage: python backend/rag.py [--debug] [--admin] "your question"')
+    print(json.dumps(ask(" ".join(args), role=role, debug=debug), ensure_ascii=False, indent=2))
