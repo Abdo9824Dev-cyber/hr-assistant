@@ -297,3 +297,78 @@ svg { width: 20px; height: 20px; flex: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Document admin page (Day 9) ---------- */
+.admin-main { flex: 1; width: 100%; max-width: 820px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 20px; }
+.admin-main > section { display: grid; gap: 20px; }
+.admin-state { margin: 40px 0 0; text-align: center; color: var(--muted); }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 22px; box-shadow: var(--shadow);
+}
+.card h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 4px; line-height: 1.35; }
+.card h2 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.muted { color: var(--muted); }
+.upload > p.muted { margin: 0 0 16px; font-size: .92rem; }
+
+.drop {
+  display: grid; justify-items: center; gap: 4px; text-align: center;
+  padding: 22px 16px; border: 1.5px dashed var(--line); border-radius: var(--r-md);
+  background: var(--bg); cursor: pointer; transition: border-color .15s ease, background-color .15s ease;
+}
+.drop:hover, .drop.over { border-color: var(--brand); }
+.drop.has-file { border-style: solid; border-color: var(--lamp); background: var(--lamp-soft); }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drop:focus-within { outline: 2.5px solid var(--lamp); outline-offset: 2px; }
+.drop svg { width: 26px; height: 26px; color: var(--brand); }
+.drop span { font-weight: 500; overflow-wrap: anywhere; }
+.drop small { font-size: .78rem; }
+
+.audience { border: 0; padding: 0; margin: 18px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.audience legend { font-size: .85rem; font-weight: 500; margin-bottom: 6px; padding: 0; }
+.audience label {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: .92rem;
+}
+.audience label:has(input:checked) { border-color: var(--brand); background: var(--lamp-soft); }
+.audience input { accent-color: var(--brand); margin: 0; }
+
+.titles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0 6px; }
+.field { display: grid; gap: 4px; font-size: .85rem; font-weight: 500; }
+.field input {
+  font: inherit; font-weight: 400; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px;
+}
+.field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px var(--lamp-soft); }
+.upload .notice { margin: 8px 0 0; font-size: .9rem; color: var(--danger); }
+.upload .notice.ok { color: var(--brand); }
+.upload .primary { margin-top: 14px; }
+.upload .primary:disabled { opacity: .6; cursor: default; }
+
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.list-head .muted { font-size: .85rem; }
+.docs { list-style: none; margin: 0; padding: 0; }
+.doc { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.doc:first-child { border-top: 0; }
+.doc-empty { padding: 12px 0; }
+.doc-icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--surface-2); color: var(--brand); }
+.doc-icon.locked { background: var(--lamp-soft); color: var(--lamp); }
+.doc-main { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.doc-title { font-weight: 600; overflow-wrap: anywhere; }
+.doc-meta { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: .8rem; }
+.status { flex: none; font-size: .78rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+.status.ready { background: var(--lamp-soft); color: var(--ink); }
+.status.indexing { background: var(--surface-2); color: var(--muted); }
+.status.failed { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+a.icon-btn { text-decoration: none; color: inherit; }
+
+@media (max-width: 560px) {
+  .admin .brand-text { display: none; }   /* phone: logo only, leaves room for the buttons */
+  .titles { grid-template-columns: 1fr; }
+  .card { padding: 16px; }
+  .doc { flex-wrap: wrap; }
+  .doc-main { flex-basis: calc(100% - 48px); }
+  .status { margin-inline-start: 48px; }
+  .doc .danger { margin-inline-start: auto; }
+}

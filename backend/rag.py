@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pathlib
 import re
 import sys
+import time
 import unicodedata
 
 from google import genai
@@ -104,11 +105,33 @@ def doc_name(uri: str, title: str = "") -> str:
     return uri.rsplit("/", 1)[-1].rsplit(".", 1)[0] if uri else (title or "unknown")
 
 
+_db_titles, _db_titles_at = {}, 0.0
+
+
+def _uploaded_titles() -> dict:
+    """Titles of documents uploaded through the admin page (Firestore), refreshed every 5 minutes."""
+    global _db_titles, _db_titles_at
+    if time.time() - _db_titles_at < 300:
+        return _db_titles
+    _db_titles_at = time.time()
+    try:
+        from google.cloud import firestore
+        titles = {}
+        for snap in firestore.Client(project=PROJECT).collection("documents").stream():
+            d = snap.to_dict() or {}
+            if d.get("status") != "deleted":
+                titles[snap.id] = {"en": d.get("title_en", ""), "ar": d.get("title_ar", "")}
+        _db_titles = titles
+    except Exception:
+        pass  # keep the previous titles; the file names still work as a fallback
+    return _db_titles
+
+
 def titles_for(name: str) -> dict:
-    """Bilingual display title for a document name."""
+    """Bilingual display title: admin-uploaded title, else doc_titles.json, else a tidied file name."""
     fallback = re.sub(r"^(CONF-)?(EN|AR)-\d+_", "", name).replace("_", " ")
-    t = TITLES.get(name, {})
-    return {"en": t.get("en", fallback), "ar": t.get("ar", fallback)}
+    t = _uploaded_titles().get(name) or TITLES.get(name, {})
+    return {"en": t.get("en") or fallback, "ar": t.get("ar") or fallback}
 
 
 def _norm(text: str) -> str:

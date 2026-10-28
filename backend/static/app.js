@@ -33,6 +33,7 @@ const I18N = {
     sessionExpired: "Your session ended. Sign in again to continue.",
     signOut: "Sign out",
     roleAdmin: "HR admin",
+    documents: "Documents",
     switchTo: "العربية",
     themeToDark: "Switch to dark mode",
     themeToLight: "Switch to light mode",
@@ -68,6 +69,7 @@ const I18N = {
     sessionExpired: "انتهت الجلسة. سجّل الدخول مرة أخرى للمتابعة.",
     signOut: "تسجيل الخروج",
     roleAdmin: "مسؤول الموارد البشرية",
+    documents: "المستندات",
     switchTo: "English",
     themeToDark: "التبديل إلى الوضع الداكن",
     themeToLight: "التبديل إلى الوضع الفاتح",
@@ -376,6 +378,7 @@ async function loadProfile() {
     role = (await res.json()).role;
   } catch { role = "employee"; }
   $("role-badge").hidden = role !== "hr_admin";
+  $("admin-link").hidden = role !== "hr_admin";
 }
 
 function clearChat() {
@@ -403,6 +406,7 @@ async function initAuth() {
     } else {
       role = "employee";
       $("role-badge").hidden = true;
+      $("admin-link").hidden = true;
       clearChat();
       openSignIn();
     }

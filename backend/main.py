@@ -6,6 +6,7 @@ Endpoints:
     GET  /health   -> status
     GET  /me       -> who is signed in and their role               (needs a valid sign-in token)
     POST /ask      -> {"question": "..."} answer for the user's role (needs a valid sign-in token)
+    /admin/...     -> document management for HR admins (see admin.py)
 
 Sign-in: the page signs users in with Google Identity Platform and sends "Authorization: Bearer <ID token>".
 This server verifies the token's signature and reads the role from it. Roles are set by an admin
@@ -22,14 +23,14 @@ import os
 import pathlib
 import time
 
-import firebase_admin
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from firebase_admin import auth as fb_auth
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from admin import router as admin_router
+from auth import AUTH_DISABLED, current_user
 from messages import DISCLAIMER
 from rag import MODEL, PROJECT, ask
 
@@ -37,17 +38,9 @@ log = logging.getLogger("hr-api")
 logging.basicConfig(level=logging.INFO)
 
 RATE_LIMIT = os.environ.get("RATE_LIMIT", "20/minute")
-AUTH_DISABLED = os.environ.get("AUTH_DISABLED", "").lower() in ("1", "true", "yes")
-DEV_ROLE = os.environ.get("DEV_ROLE", "employee")
 FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
 FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", f"{PROJECT}.firebaseapp.com")
-ROLES = {"employee", "hr_admin"}
 STATIC_DIR = pathlib.Path(__file__).parent / "static"
-
-if not AUTH_DISABLED:
-    firebase_admin.initialize_app(options={"projectId": PROJECT})
-elif os.environ.get("K_SERVICE"):  # K_SERVICE is set by Cloud Run
-    log.warning("AUTH_DISABLED is set on Cloud Run - every visitor is treated as %s!", DEV_ROLE)
 
 
 def client_key(request: Request) -> str:
@@ -60,29 +53,11 @@ def client_key(request: Request) -> str:
 
 
 limiter = Limiter(key_func=client_key)
-app = FastAPI(title="HR Assistant API", version="0.8.0",
+app = FastAPI(title="HR Assistant API", version="0.9.0",
               description="Answers employee questions from company HR policies, in Arabic or English.")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-
-def current_user(request: Request) -> dict:
-    """Verify the sign-in token and return the user. The role comes from the token, never from the request."""
-    if AUTH_DISABLED:
-        user = {"uid": "dev", "email": "developer@localhost", "role": DEV_ROLE}
-    else:
-        header = request.headers.get("authorization", "")
-        if not header.lower().startswith("bearer "):
-            raise HTTPException(status_code=401, detail="Sign-in required.")
-        try:
-            claims = fb_auth.verify_id_token(header.split(" ", 1)[1].strip())
-        except Exception:
-            raise HTTPException(status_code=401, detail="Your session has expired. Please sign in again.")
-        role = claims.get("role", "employee")
-        user = {"uid": claims["uid"], "email": claims.get("email", ""),
-                "role": role if role in ROLES else "employee"}
-    request.state.uid = user["uid"]
-    return user
+app.include_router(admin_router)   # /admin/... (HR admins only)
 
 
 class Question(BaseModel):

@@ -56,3 +56,12 @@
   Employees get the same "contact HR" reply, so restricted documents aren't revealed.
 - roles_test: ../12 checks passed (employee refused + admin answered for 4 confidential questions).
 - Access code removed; /ask returns 401 without sign-in.
+
+## Day 9 - Document admin page
+- HR admins upload PDF/scan/image/text with EN+AR titles and audience (all employees / HR only);
+  backend runs OCR, stores raw + text in Cloud Storage, imports into the matching index (incremental).
+- Firestore "documents" collection: title, audience, status (indexing/ready/failed/deleted),
+  who uploaded/deleted and when (audit trail, no content). Existing 15 docs registered by seed script.
+- Delete removes the document from the index and storage; the assistant stops answering from it.
+- Admin API returns 403 for employees, 401 without sign-in. Admin page hidden for employees.
+- Tested live: new Arabic policy uploaded -> Ready in .. min -> answered with verified quote -> deleted -> contact HR.
