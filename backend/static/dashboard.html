@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dashboard · Al-Noor HR Assistant</title>
+  <meta name="theme-color" content="#F3F5F4">
+  <script>
+    try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-lamp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></g></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h3.5A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5H14"/><path d="M10 8l-4 4 4 4M6 12h9"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+    <symbol id="i-files" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 3h6l4 4v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v4h4M4 7v12a2 2 0 0 0 2 2h9"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/></symbol>
+  </svg>
+
+  <header class="top">
+    <div class="brand">
+      <span class="mark"><svg><use href="#i-lamp"/></svg></span>
+      <div class="brand-text">
+        <span class="brand-title" data-i18n="title"></span>
+        <span class="brand-sub" data-i18n="company"></span>
+      </div>
+    </div>
+    <div class="tools">
+      <a href="/" class="icon-btn"><svg><use href="#i-chat"/></svg><span class="label" data-i18n="back"></span></a>
+      <a href="/admin.html" class="icon-btn"><svg><use href="#i-files"/></svg><span class="label" data-i18n="documents"></span></a>
+      <button id="theme" class="icon-btn round" type="button"></button>
+      <button id="lang" class="pill-btn" type="button"></button>
+      <button id="sign-out" class="icon-btn round" type="button"><svg><use href="#i-logout"/></svg></button>
+    </div>
+  </header>
+
+  <main class="admin-main dash">
+    <p id="state" class="admin-state" role="status"></p>
+
+    <section id="panel" hidden>
+      <div class="dash-head">
+        <div>
+          <h1 data-i18n="dashTitle"></h1>
+          <p class="muted" data-i18n="dashHelp"></p>
+        </div>
+        <div class="period" role="group" id="period">
+          <button type="button" data-days="7"></button>
+          <button type="button" data-days="30"></button>
+          <button type="button" data-days="90"></button>
+        </div>
+      </div>
+      <p id="demo-note" class="demo-note" hidden></p>
+
+      <div class="kpis" id="kpis"></div>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="perDay"></h2>
+          <div class="legend" aria-hidden="true">
+            <span><i class="sw answered"></i><span data-i18n="answered"></span></span>
+            <span><i class="sw to-hr"></i><span data-i18n="toHr"></span></span>
+          </div>
+        </div>
+        <div class="columns" id="columns" dir="ltr"></div>
+        <div class="tip" id="tip" hidden></div>
+        <details class="as-table">
+          <summary data-i18n="showTable"></summary>
+          <table id="day-table"></table>
+        </details>
+      </section>
+
+      <section class="card gaps">
+        <h2 data-i18n="gapsTitle"></h2>
+        <p class="muted" data-i18n="gapsHelp"></p>
+        <ol class="ranked" id="gaps"></ol>
+      </section>
+
+      <div class="dash-grid">
+        <section class="card">
+          <h2 data-i18n="topTitle"></h2>
+          <ol class="ranked" id="top"></ol>
+        </section>
+        <section class="card">
+          <h2 data-i18n="sourcesTitle"></h2>
+          <ol class="ranked" id="sources"></ol>
+        </section>
+        <section class="card">
+          <h2 data-i18n="deptTitle"></h2>
+          <ol class="ranked" id="depts"></ol>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>

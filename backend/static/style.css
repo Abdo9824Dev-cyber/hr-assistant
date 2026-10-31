@@ -17,6 +17,8 @@
   --danger: #B23B2B;
   --shadow: 0 1px 2px rgba(19, 38, 34, .06), 0 8px 24px rgba(19, 38, 34, .07);
   --header-bg: rgba(243, 245, 244, .78);
+  --c-answered: #138065;   /* chart colors, validated for colour-blind separation */
+  --c-to-hr: #C08A1E;
   --r-lg: 22px;
   --r-md: 14px;
   --font: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -38,6 +40,8 @@
     --danger: #EC8572;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
     --header-bg: rgba(11, 20, 18, .75);
+    --c-answered: #2FA383;
+    --c-to-hr: #B8862A;
   }
 }
 :root[data-theme="dark"] {
@@ -56,6 +60,8 @@
   --danger: #EC8572;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
   --header-bg: rgba(11, 20, 18, .75);
+    --c-answered: #2FA383;
+    --c-to-hr: #B8862A;
 }
 
 /* ---------- Base ---------- */
@@ -371,4 +377,84 @@ a.icon-btn { text-decoration: none; color: inherit; }
   .doc-main { flex-basis: calc(100% - 48px); }
   .status { margin-inline-start: 48px; }
   .doc .danger { margin-inline-start: auto; }
+}
+
+/* ---------- Analytics dashboard (Day 10) ---------- */
+.dash { max-width: 980px; }
+.dash-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.dash-head h1 { font-size: 1.5rem; font-weight: 700; margin: 0; line-height: 1.3; }
+.dash-head p { margin: 2px 0 0; font-size: .88rem; }
+.period { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.period button {
+  border: 0; background: transparent; border-radius: 999px; padding: 5px 14px;
+  font-size: .85rem; font-weight: 500; color: var(--muted); cursor: pointer;
+}
+.period button[aria-pressed="true"] { background: var(--lamp-soft); color: var(--ink); }
+.demo-note { margin: -6px 0 0; font-size: .82rem; color: var(--muted); }
+
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.kpi {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px;
+}
+.kpi-label { font-size: .8rem; color: var(--muted); line-height: 1.4; }
+.kpi-value { font-size: 1.75rem; font-weight: 700; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.kpi-note { font-size: .78rem; color: var(--muted); }
+
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.legend { display: flex; gap: 14px; font-size: .8rem; color: var(--muted); }
+.legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.sw.answered { background: var(--c-answered); }
+.sw.to-hr { background: var(--c-to-hr); }
+
+.columns { position: relative; height: 220px; margin: 0 0 30px 28px; }
+.col-grid { position: absolute; inset: 0; pointer-events: none; }
+.gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line); }
+.gridlabel { position: absolute; left: -28px; top: -9px; width: 22px; text-align: right; font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.col-plot { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 3px; }
+.col { position: relative; flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; outline-offset: 2px; cursor: default; }
+.col:hover::before, .col:focus::before { content: ""; position: absolute; inset: 0 -1px; background: var(--surface-2); border-radius: 4px; z-index: 0; }
+.stack { position: relative; z-index: 1; width: min(100%, 22px); display: flex; flex-direction: column; gap: 2px; }
+.seg { min-height: 2px; }
+.seg:first-child { border-radius: 4px 4px 0 0; }
+.seg.answered { background: var(--c-answered); }
+.seg.to-hr { background: var(--c-to-hr); }
+.xlabel { position: absolute; top: calc(100% + 6px); font-size: .7rem; color: var(--muted); white-space: nowrap; }
+.dash .card { position: relative; }
+.tip {
+  position: absolute; z-index: 5; pointer-events: none; min-width: 170px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
+  padding: 8px 12px; font-size: .8rem; display: grid; gap: 3px;
+}
+.tip-row { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 8px; color: var(--muted); }
+.tip-row b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.as-table summary { cursor: pointer; font-size: .82rem; color: var(--brand); width: fit-content; }
+.as-table table { margin-top: 10px; border-collapse: collapse; font-size: .85rem; width: 100%; }
+.as-table th, .as-table td { text-align: start; padding: 6px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.as-table th { color: var(--muted); font-weight: 500; }
+
+.gaps h2 { margin-bottom: 2px; }
+.gaps > p { margin: 0 0 12px; font-size: .88rem; }
+.dash-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.dash-grid .card:first-child { grid-column: 1 / -1; }
+.dash-grid h2 { margin-bottom: 12px; }
+.ranked { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.rank { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; }
+.rank-name { font-size: .92rem; overflow-wrap: anywhere; }
+.rank-count { font-size: .8rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rank-track { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.rank-bar { display: block; height: 100%; border-radius: 999px; }
+.rank-bar.answered { background: var(--c-answered); }
+.rank-bar.to-hr { background: var(--c-to-hr); }
+.ranked-empty { font-size: .9rem; }
+
+@media (max-width: 860px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi-value { font-size: 1.45rem; }
+  .kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .columns { height: 180px; }
+  .col-plot { gap: 1px; }
 }

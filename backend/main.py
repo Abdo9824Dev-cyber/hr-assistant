@@ -6,7 +6,7 @@ Endpoints:
     GET  /health   -> status
     GET  /me       -> who is signed in and their role               (needs a valid sign-in token)
     POST /ask      -> {"question": "..."} answer for the user's role (needs a valid sign-in token)
-    /admin/...     -> document management for HR admins (see admin.py)
+    /admin/...     -> document management (admin.py) and analytics (analytics.py), HR admins only
 
 Sign-in: the page signs users in with Google Identity Platform and sends "Authorization: Bearer <ID token>".
 This server verifies the token's signature and reads the role from it. Roles are set by an admin
@@ -23,12 +23,13 @@ import os
 import pathlib
 import time
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+import analytics
 from admin import router as admin_router
 from auth import AUTH_DISABLED, current_user
 from messages import DISCLAIMER
@@ -53,11 +54,12 @@ def client_key(request: Request) -> str:
 
 
 limiter = Limiter(key_func=client_key)
-app = FastAPI(title="HR Assistant API", version="0.9.0",
+app = FastAPI(title="HR Assistant API", version="0.10.0",
               description="Answers employee questions from company HR policies, in Arabic or English.")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.include_router(admin_router)   # /admin/... (HR admins only)
+app.include_router(admin_router)          # /admin/documents... (HR admins only)
+app.include_router(analytics.router)      # /admin/analytics (HR admins only)
 
 
 class Question(BaseModel):
@@ -100,7 +102,7 @@ def me(user: dict = Depends(current_user)):
 
 @app.post("/ask", response_model=AnswerOut)
 @limiter.limit(RATE_LIMIT)
-def ask_route(request: Request, q: Question, user: dict = Depends(current_user)):
+def ask_route(request: Request, q: Question, background: BackgroundTasks, user: dict = Depends(current_user)):
     start = time.perf_counter()
     try:
         result = ask(q.question.strip(), role=user["role"])
@@ -111,6 +113,8 @@ def ask_route(request: Request, q: Question, user: dict = Depends(current_user))
     # Privacy: metadata only - never the question, the answer or the email address.
     log.info("ask role=%s lang=%s grounded=%s sources=%d latency_ms=%d",
              user["role"], result["lang"], result["grounded"], len(result["sources"]), latency)
+    # Anonymous analytics, saved after the answer is sent (doesn't slow the reply).
+    background.add_task(analytics.record, q.question.strip(), result, user, latency)
     return AnswerOut(
         answer=result["answer"],
         sources=[Source(title=s["title"], title_en=s["title_en"], title_ar=s["title_ar"],

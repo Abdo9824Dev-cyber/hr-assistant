@@ -28,7 +28,8 @@ elif os.environ.get("K_SERVICE"):  # K_SERVICE is set by Cloud Run
 def current_user(request: Request) -> dict:
     """Verify the sign-in token and return {uid, email, role}."""
     if AUTH_DISABLED:
-        user = {"uid": "dev", "email": "developer@localhost", "role": DEV_ROLE}
+        user = {"uid": "dev", "email": "developer@localhost", "role": DEV_ROLE,
+                "department": os.environ.get("DEV_DEPARTMENT", "")}
     else:
         header = request.headers.get("authorization", "")
         if not header.lower().startswith("bearer "):
@@ -39,7 +40,8 @@ def current_user(request: Request) -> dict:
             raise HTTPException(status_code=401, detail="Your session has expired. Please sign in again.")
         role = claims.get("role", "employee")
         user = {"uid": claims["uid"], "email": claims.get("email", ""),
-                "role": role if role in ROLES else "employee"}
+                "role": role if role in ROLES else "employee",
+                "department": str(claims.get("department", ""))[:40]}
     request.state.uid = user["uid"]
     return user
 

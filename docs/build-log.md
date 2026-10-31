@@ -65,3 +65,11 @@
 - Delete removes the document from the index and storage; the assistant stops answering from it.
 - Admin API returns 403 for employees, 401 without sign-in. Admin page hidden for employees.
 - Tested live: new Arabic policy uploaded -> Ready in .. min -> answered with verified quote -> deleted -> contact HR.
+
+## Day 10 — Analytics dashboard
+- Every question is recorded anonymously in Firestore (no name or email), kept 180 days.
+- Dashboard for HR admins: answer rate, questions per day, questions the policies don't answer (policy gaps),
+  most-used policies, questions by department. Arabic/English, light/dark, phone-friendly, table view.
+- Department added to each user's profile (`infra/users.py department`).
+- Demo data script (`eval/seed_analytics.py`), flagged and removable with `--delete`.
+- Security: employees get 403 on /admin/analytics, no sign-in gets 401.

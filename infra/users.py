@@ -1,8 +1,9 @@
 """Manage HR Assistant accounts and roles (run by an administrator from the project root).
 
 Usage (with .venv and .env loaded):
-    python infra/users.py create  someone@company.com employee     # prints a temporary password
-    python infra/users.py create  hr.lead@company.com hr_admin
+    python infra/users.py create  someone@company.com employee [Department]   # prints a temporary password
+    python infra/users.py create  hr.lead@company.com hr_admin HR
+    python infra/users.py department someone@company.com Finance      # set or change the department
     python infra/users.py role    someone@company.com hr_admin     # change a role
     python infra/users.py list
     python infra/users.py disable someone@company.com              # block sign-in (keeps the account)
@@ -10,6 +11,7 @@ Usage (with .venv and .env loaded):
     python infra/users.py delete  someone@company.com
 
 Roles: employee (company policies) | hr_admin (company policies + confidential HR files).
+Department (optional): shown in the analytics dashboard, e.g. Finance, Sales, Warehouse, IT, HR.
 A role change applies at the user's next sign-in (or within one hour, when their token refreshes).
 """
 import os
@@ -39,24 +41,35 @@ def main(args: list) -> None:
     if not args:
         sys.exit(__doc__)
     cmd = args[0]
-    if cmd == "create" and len(args) == 3:
+    if cmd == "create" and len(args) in (3, 4):
         email, role = args[1], need_role(args[2])
+        claims = {"role": role}
+        if len(args) == 4:
+            claims["department"] = args[3]
         password = temp_password()
         user = auth.create_user(email=email, password=password, email_verified=False)
-        auth.set_custom_user_claims(user.uid, {"role": role})
-        print(f"Created {email} as {role}")
+        auth.set_custom_user_claims(user.uid, claims)
+        print(f"Created {email} as {role}" + (f" in {args[3]}" if len(args) == 4 else ""))
         print(f"Temporary password: {password}")
         print("Share it privately; the user can change it with 'Forgot password?' on the sign-in screen.")
     elif cmd == "role" and len(args) == 3:
         user = auth.get_user_by_email(args[1])
-        auth.set_custom_user_claims(user.uid, {"role": need_role(args[2])})
+        claims = dict(user.custom_claims or {})
+        claims["role"] = need_role(args[2])
+        auth.set_custom_user_claims(user.uid, claims)
         auth.revoke_refresh_tokens(user.uid)  # force a fresh sign-in so the new role applies now
         print(f"{args[1]} is now {args[2]} (they will be asked to sign in again)")
+    elif cmd == "department" and len(args) == 3:
+        user = auth.get_user_by_email(args[1])
+        claims = dict(user.custom_claims or {})
+        claims["department"] = args[2]
+        auth.set_custom_user_claims(user.uid, claims)
+        print(f"{args[1]} is now in {args[2]} (applies at their next sign-in)")
     elif cmd == "list":
         for user in auth.list_users().iterate_all():
-            role = (user.custom_claims or {}).get("role", "employee")
+            claims = user.custom_claims or {}
             state = "disabled" if user.disabled else "active"
-            print(f"{user.email:<40} {role:<10} {state}")
+            print(f"{user.email:<40} {claims.get('role', 'employee'):<10} {claims.get('department', '-'):<12} {state}")
     elif cmd in ("disable", "enable") and len(args) == 2:
         user = auth.get_user_by_email(args[1])
         auth.update_user(user.uid, disabled=(cmd == "disable"))

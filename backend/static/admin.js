@@ -3,7 +3,7 @@
 
 const I18N = {
   en: {
-    title: "HR Assistant", company: "Al-Noor Trading Co.", back: "Chat",
+    title: "HR Assistant", company: "Al-Noor Trading Co.", back: "Chat", dashboard: "Dashboard",
     switchTo: "العربية", signOut: "Sign out",
     themeToDark: "Switch to dark mode", themeToLight: "Switch to light mode",
     loading: "Loading documents…",
@@ -30,7 +30,7 @@ const I18N = {
     deleteFailed: "The document wasn't deleted. Try again.",
   },
   ar: {
-    title: "مساعد الموارد البشرية", company: "شركة النور التجارية", back: "المحادثة",
+    title: "مساعد الموارد البشرية", company: "شركة النور التجارية", back: "المحادثة", dashboard: "لوحة المؤشرات",
     switchTo: "English", signOut: "تسجيل الخروج",
     themeToDark: "التبديل إلى الوضع الداكن", themeToLight: "التبديل إلى الوضع الفاتح",
     loading: "جارٍ تحميل المستندات…",
