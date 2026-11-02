@@ -2,7 +2,8 @@
 
 Every answered question is recorded in Firestore, collection "chats", WITHOUT the user's identity:
     question, q_norm (for grouping), lang, grounded (answered vs sent to HR), sources (policy names),
-    role, department, latency_ms, created_at, expire_at (auto-delete date), demo (seed data flag)
+    role, department, latency_ms, created_at, expire_at (auto-delete date), demo (seed data flag),
+    basis (policy | law | both | none) and law_conflict (a policy gave less than the Labor Law) - Day 11
 
     GET /admin/analytics?days=30   -> figures for the dashboard (HR admins only)
 """
@@ -56,6 +57,8 @@ def record(question: str, result: dict, user: dict, latency_ms: int,
             "q_norm": normalize(question)[:500],
             "lang": result.get("lang", "en"),
             "grounded": bool(result.get("grounded")),
+            "basis": result.get("basis", "none"),
+            "law_conflict": bool(result.get("law_conflict")),
             "sources": [s.get("title", "") for s in result.get("sources", [])],
             "role": user.get("role", "employee"),
             "department": user.get("department") or "",
@@ -80,7 +83,8 @@ def summarize(rows: list, days: int, today: datetime) -> dict:
     answered = sum(r.get("grounded", False) for r in rows)
     latencies = [r["latency_ms"] for r in rows if r.get("latency_ms")]
     by_day = {(today - timedelta(days=i)).date().isoformat(): {"answered": 0, "to_hr": 0} for i in range(days - 1, -1, -1)}
-    top, gaps = defaultdict(list), defaultdict(list)
+    top, gaps, conflicts = defaultdict(list), defaultdict(list), defaultdict(list)
+    conflict_policies = Counter()
     sources, departments, langs, roles = Counter(), Counter(), Counter(), Counter()
     for r in rows:
         created = r.get("created_at")
@@ -91,6 +95,11 @@ def summarize(rows: list, days: int, today: datetime) -> dict:
         top[key].append(r.get("question", ""))
         if not r.get("grounded"):
             gaps[key].append(r.get("question", ""))
+        if r.get("law_conflict"):
+            conflicts[key].append(r.get("question", ""))
+            for s in r.get("sources", []):
+                if not s.startswith("LAW-"):
+                    conflict_policies[s] += 1
         for s in r.get("sources", []):
             sources[s] += 1
         departments[r.get("department") or "unassigned"] += 1
@@ -102,6 +111,7 @@ def summarize(rows: list, days: int, today: datetime) -> dict:
         "total": total,
         "answered": answered,
         "to_hr": total - answered,
+        "from_law": sum(1 for r in rows if r.get("basis") in ("law", "both")),
         "answer_rate": round(answered / total, 3) if total else None,
         "median_latency_ms": int(statistics.median(latencies)) if latencies else None,
         "languages": dict(langs),
@@ -109,6 +119,9 @@ def summarize(rows: list, days: int, today: datetime) -> dict:
         "by_day": [{"date": d, **v} for d, v in by_day.items()],
         "top_questions": _top(top, 10),
         "unanswered": _top(gaps, 10),
+        "conflicts": _top(conflicts, 10),
+        "conflict_policies": [{"name": n, "count": c, "title_en": titles_for(n)["en"], "title_ar": titles_for(n)["ar"]}
+                              for n, c in conflict_policies.most_common(5)],
         "top_sources": [{"name": n, "count": c, "title_en": titles_for(n)["en"], "title_ar": titles_for(n)["ar"]}
                         for n, c in sources.most_common(8)],
         "departments": [{"name": n, "count": c} for n, c in departments.most_common(8)],

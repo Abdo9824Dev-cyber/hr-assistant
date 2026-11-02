@@ -54,7 +54,7 @@ def client_key(request: Request) -> str:
 
 
 limiter = Limiter(key_func=client_key)
-app = FastAPI(title="HR Assistant API", version="0.10.0",
+app = FastAPI(title="HR Assistant API", version="0.11.0",
               description="Answers employee questions from company HR policies, in Arabic or English.")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -73,6 +73,7 @@ class Source(BaseModel):
     title_ar: str
     snippet: str
     verified: bool
+    kind: str = "policy"          # policy | law (Day 11)
 
 
 class AnswerOut(BaseModel):
@@ -80,6 +81,8 @@ class AnswerOut(BaseModel):
     sources: list[Source]
     grounded: bool
     lang: str
+    basis: str = "none"           # where the answer came from: policy | law | both | none
+    law_conflict: bool = False    # a policy gives less than the Labor Law requires
     disclaimer: str
     latency_ms: int
 
@@ -111,16 +114,19 @@ def ask_route(request: Request, q: Question, background: BackgroundTasks, user: 
         raise HTTPException(status_code=503, detail="The assistant is temporarily unavailable. Please try again.")
     latency = int((time.perf_counter() - start) * 1000)
     # Privacy: metadata only - never the question, the answer or the email address.
-    log.info("ask role=%s lang=%s grounded=%s sources=%d latency_ms=%d",
-             user["role"], result["lang"], result["grounded"], len(result["sources"]), latency)
+    log.info("ask role=%s lang=%s grounded=%s basis=%s sources=%d latency_ms=%d",
+             user["role"], result["lang"], result["grounded"], result.get("basis"), len(result["sources"]), latency)
     # Anonymous analytics, saved after the answer is sent (doesn't slow the reply).
     background.add_task(analytics.record, q.question.strip(), result, user, latency)
     return AnswerOut(
         answer=result["answer"],
         sources=[Source(title=s["title"], title_en=s["title_en"], title_ar=s["title_ar"],
-                        snippet=s["snippet"], verified=s["verified"]) for s in result["sources"]],
+                        snippet=s["snippet"], verified=s["verified"], kind=s.get("kind", "policy"))
+                 for s in result["sources"]],
         grounded=result["grounded"],
         lang=result["lang"],
+        basis=result.get("basis", "none"),
+        law_conflict=result.get("law_conflict", False),
         disclaimer=DISCLAIMER[result["lang"]],
         latency_ms=latency,
     )

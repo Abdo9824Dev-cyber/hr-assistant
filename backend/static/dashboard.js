@@ -12,11 +12,14 @@ const I18N = {
     dashHelp: "Anonymous: questions are recorded without names or emails.",
     days: (n) => `${n} days`,
     demoNote: (n) => `Includes ${n} demo questions created for testing.`,
-    kQuestions: "Questions", kAnswered: "Answered from policies", kToHr: "Sent to HR",
+    kQuestions: "Questions", kAnswered: "Answered", kToHr: "Sent to HR",
     kLatency: "Typical answer time", kLang: "Asked in Arabic",
-    ofTotal: (n) => `of ${n} questions`, seconds: (s) => `${s} s`, englishShare: (p) => `${p}% in English`,
+    ofTotal: (n) => `of ${n} questions`, fromLaw: (n) => `${n} used the Labor Law`, seconds: (s) => `${s} s`, englishShare: (p) => `${p}% in English`,
     perDay: "Questions per day", answered: "Answered", toHr: "Sent to HR",
     showTable: "Show as a table", date: "Date", total: "Total",
+    conflictTitle: "Policies that may be below the Saudi Labor Law",
+    conflictHelp: "For these questions the company policy gave less than the law requires. Review the policy with your legal advisor.",
+    conflictPolicies: "Policies to review", conflictQuestions: "Questions that showed it",
     gapsTitle: "Questions the policies don't answer",
     gapsHelp: "Employees were sent to HR for these. Each one is a candidate for a new or clearer policy.",
     topTitle: "Most asked", sourcesTitle: "Most used policies", deptTitle: "Questions by department",
@@ -34,11 +37,14 @@ const I18N = {
     dashHelp: "بيانات مجهولة الهوية: تُسجَّل الأسئلة بدون أسماء أو بريد إلكتروني.",
     days: (n) => `${n} يوماً`,
     demoNote: (n) => `تشمل ${n} سؤالاً تجريبياً أُنشئت للاختبار.`,
-    kQuestions: "الأسئلة", kAnswered: "أُجيب عنها من السياسات", kToHr: "أُحيلت إلى الموارد البشرية",
+    kQuestions: "الأسئلة", kAnswered: "أُجيب عنها", kToHr: "أُحيلت إلى الموارد البشرية",
     kLatency: "زمن الإجابة المعتاد", kLang: "طُرحت بالعربية",
-    ofTotal: (n) => `من ${n} سؤالاً`, seconds: (s) => `${s} ث`, englishShare: (p) => `${p}% بالإنجليزية`,
+    ofTotal: (n) => `من ${n} سؤالاً`, fromLaw: (n) => `${n} منها من نظام العمل`, seconds: (s) => `${s} ث`, englishShare: (p) => `${p}% بالإنجليزية`,
     perDay: "الأسئلة يومياً", answered: "أُجيب عنها", toHr: "أُحيلت إلى الموارد البشرية",
     showTable: "عرض كجدول", date: "التاريخ", total: "المجموع",
+    conflictTitle: "سياسات قد تكون أقل مما يشترطه نظام العمل",
+    conflictHelp: "في هذه الأسئلة أعطت سياسة الشركة أقل مما يشترطه النظام. راجع السياسة مع مستشارك القانوني.",
+    conflictPolicies: "سياسات تحتاج مراجعة", conflictQuestions: "الأسئلة التي كشفت ذلك",
     gapsTitle: "أسئلة لا تجيب عنها السياسات",
     gapsHelp: "أُحيل الموظفون إلى الموارد البشرية في هذه الأسئلة. كل سؤال منها فرصة لسياسة جديدة أو أوضح.",
     topTitle: "الأكثر سؤالاً", sourcesTitle: "السياسات الأكثر استخداماً", deptTitle: "الأسئلة حسب الإدارة",
@@ -157,6 +163,12 @@ function render() {
   if (data.demo_records) $("demo-note").textContent = t("demoNote", num(data.demo_records));
   renderKpis();
   renderColumns();
+  const conflicts = data.conflicts || [];
+  $("conflicts-card").hidden = !conflicts.length;
+  if (conflicts.length) {
+    renderRanked($("conflict-policies"), data.conflict_policies || [], (r) => (lang === "ar" ? r.title_ar : r.title_en) || r.name, (r) => r.count, "to-hr");
+    renderRanked($("conflicts"), conflicts, (r) => r.question, (r) => r.count, "to-hr", true);
+  }
   renderRanked($("gaps"), data.unanswered, (r) => r.question, (r) => r.count, "to-hr", true);
   renderRanked($("top"), data.top_questions, (r) => r.question, (r) => r.count, "answered", true);
   renderRanked($("sources"), data.top_sources, (r) => (lang === "ar" ? r.title_ar : r.title_en) || r.name, (r) => r.count, "answered");
@@ -178,7 +190,8 @@ function renderKpis() {
   const ar = data.languages.ar || 0;
   k.append(
     tile(t("kQuestions"), num(total)),
-    tile(t("kAnswered"), total ? `${pct(data.answered)}%` : "–", total ? t("ofTotal", num(total)) : ""),
+    tile(t("kAnswered"), total ? `${pct(data.answered)}%` : "–",
+      total ? t("ofTotal", num(total)) + (data.from_law ? ` · ${t("fromLaw", num(data.from_law))}` : "") : ""),
     tile(t("kToHr"), num(data.to_hr), total ? `${pct(data.to_hr)}%` : ""),
     tile(t("kLatency"), data.median_latency_ms ? t("seconds", (data.median_latency_ms / 1000).toFixed(1)) : "–"),
     tile(t("kLang"), total ? `${pct(ar)}%` : "–", total ? t("englishShare", 100 - pct(ar)) : ""),

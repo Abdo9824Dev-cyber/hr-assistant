@@ -44,7 +44,12 @@ def questions() -> list:
     # Popular topics get asked more than once (that's what "top questions" shows)
     popular = ["How many days of annual leave do I get?", "كم مدة فترة التجربة؟",
                "What is the hotel limit in Jeddah?", "ما هي ساعات العمل في رمضان؟"]
-    return qs + popular * 2 + GAPS + GAPS[:3]
+    # Day 11: questions the Saudi Labor Law answers (and a maternity question that shows a conflict
+    # once EN-07_Maternity_Leave_Policy is uploaded)
+    law = ["How is the end-of-service award calculated?", "كم مدة إجازة الوضع للموظفة؟",
+           "If I resign after 3 years, how much of the end-of-service award do I get?",
+           "How many weeks of maternity leave do I get?"]
+    return qs + popular * 2 + GAPS + GAPS[:3] + law * 2
 
 
 def seed() -> None:

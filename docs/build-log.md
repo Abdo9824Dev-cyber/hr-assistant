@@ -73,3 +73,11 @@
 - Department added to each user's profile (`infra/users.py department`).
 - Demo data script (`eval/seed_analytics.py`), flagged and removable with `--delete`.
 - Security: employees get 403 on /admin/analytics, no sign-in gets 401.
+
+## Day 11 — Saudi Labor Law layer
+- Official Labor Law (with 2025 amendments) in its own search index, available to every role.
+- Company policy first; the law fills gaps (end of service, sick pay, deductions) and is cited by article.
+- Detects policies below the legal minimum: outdated 10-week maternity leave (law: 12) and a 5-day
+  disciplinary appeal window (law: 30 days). Shown on the HR dashboard.
+- Problem: Gemini read "Article 151" as "51" → article numbers only from the full heading, otherwise none.
+- Results: roles 12/12, smoke 27/27 + 8/8, law 9/9, conflict 2/2.

@@ -1,7 +1,8 @@
 """Day 8: access-control test. The same questions are asked as an employee and as an HR admin.
 
-  - Confidential questions: the employee must get "contact HR"; the HR admin must get an answer
-    citing a confidential document (CONF-...).
+  - Confidential questions: the employee must get "contact HR" (or, since Day 11, an answer from the public
+    Saudi Labor Law only); the HR admin must get an answer citing a confidential document (CONF-...).
+    The security rule: an employee must NEVER see a CONF-... document.
   - Normal questions: both roles get the same kind of answer from company policies.
 
 Usage (from the project root, with CONFIDENTIAL_ENGINE_ID in .env): python eval/roles_test.py
@@ -48,11 +49,12 @@ def cites_confidential(res: dict) -> bool:
 
 
 passed = total = 0
-print("Confidential questions (employee must be refused, HR admin must be answered):")
+print("Confidential questions (employee: refused or law-only answer; HR admin: confidential answer):")
 for q in CONFIDENTIAL:
     emp = ask(q, role="employee"); time.sleep(PAUSE)
     adm = ask(q, role="hr_admin"); time.sleep(PAUSE)
-    emp_ok = not emp["grounded"] and not cites_confidential(emp)
+    law_only = emp["grounded"] and all(s.get("kind") == "law" for s in emp["sources"])
+    emp_ok = (not emp["grounded"] or law_only) and not cites_confidential(emp)
     adm_ok = adm["grounded"] and cites_confidential(adm)
     total += 2; passed += emp_ok + adm_ok
     print(f"\n  {q}")

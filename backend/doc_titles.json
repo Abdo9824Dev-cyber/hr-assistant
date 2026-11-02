@@ -13,5 +13,8 @@
   "AR-06_Ramadan_Working_Hours": {"en": "Ramadan Working Hours", "ar": "سياسة ساعات العمل في رمضان"},
   "CONF-EN-01_Salary_Grades_and_Allowances": {"en": "Salary Grades and Allowances", "ar": "سلم الرواتب والبدلات"},
   "CONF-EN-02_Performance_and_Bonus": {"en": "Performance Review and Bonus Policy", "ar": "سياسة تقييم الأداء والمكافأة السنوية"},
-  "CONF-AR-01_Disciplinary_Procedure": {"en": "Disciplinary Procedure", "ar": "إجراءات الجزاءات التأديبية"}
+  "CONF-AR-01_Disciplinary_Procedure": {"en": "Disciplinary Procedure", "ar": "إجراءات الجزاءات التأديبية"},
+  "LAW-AR_Saudi_Labor_Law": {"en": "Saudi Labor Law", "ar": "نظام العمل السعودي"},
+  "LAW-AR_Implementing_Regulations": {"en": "Labor Law Implementing Regulations", "ar": "اللائحة التنفيذية لنظام العمل"},
+  "LAW-EN_Saudi_Labor_Law": {"en": "Saudi Labor Law (English translation)", "ar": "نظام العمل السعودي (ترجمة إنجليزية)"}
 }

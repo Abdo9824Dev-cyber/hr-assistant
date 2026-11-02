@@ -1,8 +1,8 @@
 """Fixed bilingual texts used by the assistant. Keep Arabic here, never typed into code elsewhere."""
 
 DEFER = {
-    "en": "I couldn't find this in the company policies. Please contact HR.",
-    "ar": "لم أجد هذا في سياسات الشركة. يرجى التواصل مع الموارد البشرية.",
+    "en": "I couldn't find this in the company policies or the Saudi Labor Law. Please contact HR.",
+    "ar": "لم أجد هذا في سياسات الشركة أو نظام العمل السعودي. يرجى التواصل مع الموارد البشرية.",
 }
 
 DISCLAIMER = {

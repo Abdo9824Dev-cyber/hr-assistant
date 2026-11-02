@@ -144,6 +144,7 @@ svg { width: 20px; height: 20px; flex: none; }
   padding: 14px 16px; cursor: pointer; text-align: start;
   transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
+.topic:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .topic:hover { border-color: var(--brand); box-shadow: var(--shadow); transform: translateY(-1px); }
 .topic .head { display: flex; align-items: center; gap: 8px; color: var(--brand); font-size: .82rem; font-weight: 600; }
 .topic .head svg { width: 18px; height: 18px; }
@@ -458,3 +459,26 @@ a.icon-btn { text-decoration: none; color: inherit; }
   .columns { height: 180px; }
   .col-plot { gap: 1px; }
 }
+
+/* ---------- Labor Law (Day 11) ---------- */
+.conflicts { border-color: color-mix(in srgb, var(--c-to-hr) 55%, var(--line)); }
+.conflicts h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.alert-icon { width: 20px; height: 20px; color: var(--c-to-hr); flex: none; }
+.conflicts > p { margin: 0 0 14px; font-size: .88rem; }
+.conflicts h3 { font-size: .82rem; font-weight: 600; color: var(--muted); margin: 0 0 10px; }
+.conflict-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 24px; }
+@media (max-width: 560px) { .conflict-cols { grid-template-columns: 1fr; gap: 18px; } }
+
+/* Law citations in the chat: a different icon and a quiet "law" tag */
+.chip.law summary svg { color: var(--brand); }
+.chip-tag {
+  font-size: .7rem; font-weight: 600; color: var(--brand); background: var(--surface-2);
+  border-radius: 999px; padding: 1px 7px; margin-inline-start: 2px;
+}
+.law-note { margin: 8px 0 0; font-size: .75rem; color: var(--muted); }
+.conflict-note {
+  display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; padding: 8px 10px;
+  border-radius: 10px; font-size: .82rem; line-height: 1.5;
+  background: color-mix(in srgb, var(--c-to-hr) 12%, transparent); color: var(--ink);
+}
+.conflict-note svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--c-to-hr); }

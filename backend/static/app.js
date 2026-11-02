@@ -6,7 +6,7 @@ const I18N = {
     title: "HR Assistant",
     company: "Al-Noor Trading Co.",
     emptyTitle: "How can HR help today?",
-    emptyText: "Answers come only from company policies, and every answer names the policy it came from. Ask in Arabic or English.",
+    emptyText: "Answers come from company policies and the Saudi Labor Law, and every answer names its source. Ask in Arabic or English.",
     placeholder: "Type your question…",
     send: "Ask",
     newChat: "New chat",
@@ -14,6 +14,11 @@ const I18N = {
     copied: "Copied",
     quoteLabel: "Exact text from the policy",
     quoteUnverified: "Related section of the policy",
+    lawQuote: "Exact text from the Saudi Labor Law",
+    lawUnverified: "Related section of the Saudi Labor Law",
+    lawTag: "Law",
+    lawNote: "General information from the law, not legal advice.",
+    conflictNote: "The company policy may give less than the Saudi Labor Law requires. This is flagged on the HR dashboard; confirm with HR.",
     disclaimer: "Answers are for guidance. Confirm important decisions with HR.",
     errNetwork: "The assistant didn't respond. Check your connection and ask again.",
     errLimit: "That's many questions in one minute. Wait a moment, then ask again.",
@@ -42,7 +47,7 @@ const I18N = {
     title: "مساعد الموارد البشرية",
     company: "شركة النور التجارية",
     emptyTitle: "كيف يمكن للموارد البشرية مساعدتك اليوم؟",
-    emptyText: "الإجابات من سياسات الشركة فقط، ومع كل إجابة اسم السياسة التي جاءت منها. اسأل بالعربية أو بالإنجليزية.",
+    emptyText: "الإجابات من سياسات الشركة ونظام العمل السعودي، ومع كل إجابة اسم مصدرها. اسأل بالعربية أو بالإنجليزية.",
     placeholder: "اكتب سؤالك هنا…",
     send: "اسأل",
     newChat: "محادثة جديدة",
@@ -50,6 +55,11 @@ const I18N = {
     copied: "تم النسخ",
     quoteLabel: "النص كما ورد في السياسة",
     quoteUnverified: "الجزء المرتبط من السياسة",
+    lawQuote: "النص كما ورد في نظام العمل السعودي",
+    lawUnverified: "الجزء المرتبط من نظام العمل السعودي",
+    lawTag: "نظام",
+    lawNote: "معلومات عامة من النظام، وليست استشارة قانونية.",
+    conflictNote: "قد تمنح سياسة الشركة أقل مما يشترطه نظام العمل السعودي. تظهر هذه الحالة في لوحة مؤشرات الموارد البشرية؛ يرجى التأكد معهم.",
     disclaimer: "الإجابات للاسترشاد. يرجى التأكد من القرارات المهمة مع الموارد البشرية.",
     errNetwork: "لم يصل رد من المساعد. تحقق من الاتصال ثم اسأل مرة أخرى.",
     errLimit: "أسئلة كثيرة خلال دقيقة واحدة. انتظر قليلاً ثم اسأل مرة أخرى.",
@@ -82,6 +92,7 @@ const TOPICS = [
   { icon: "clock", en: "Attendance", ar: "الدوام", q: "متى أعتبر متأخراً؟" },
   { icon: "plane", en: "Travel", ar: "السفر", q: "What is the hotel limit in Jeddah?" },
   { icon: "crescent", en: "Ramadan", ar: "رمضان", q: "ما هي ساعات العمل في رمضان؟" },
+  { icon: "scale", en: "Labor Law", ar: "نظام العمل", q: "How is the end-of-service award calculated?" },
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -143,9 +154,10 @@ function applyLang() {
   document.querySelectorAll(".copy .label").forEach((el) => { el.textContent = t("copy"); });
   document.querySelectorAll(".chip-title").forEach((el) => { el.textContent = el.dataset[lang]; });
   document.querySelectorAll(".excerpt figcaption").forEach((el) => {
-    const verified = el.dataset.key === "quoteLabel";
+    const verified = el.dataset.key === "quoteLabel" || el.dataset.key === "lawQuote";
     el.replaceChildren(...(verified ? [icon("check")] : []), document.createTextNode(t(el.dataset.key)));
   });
+  document.querySelectorAll("[data-key].retext").forEach((el) => { el.textContent = t(el.dataset.key); });
   document.title = `${t("title")} · ${t("company")}`;
   $("role-badge").textContent = t("roleAdmin");
   const notice = $("signin-notice");
@@ -216,6 +228,15 @@ function addBot() {
   return li;
 }
 
+// An element whose text follows the language switch
+function retext(tag, cls, key) {
+  const el = document.createElement(tag);
+  el.className = (cls ? cls + " " : "") + "retext";
+  el.dataset.key = key;
+  el.textContent = t(key);
+  return el;
+}
+
 function setText(li, text) {
   const bubble = li.querySelector(".bubble");
   bubble.replaceChildren();
@@ -235,8 +256,9 @@ function fillBot(li, data) {
     const box = document.createElement("div");
     box.className = "sources";
     data.sources.forEach((s) => {
+      const isLaw = s.kind === "law";
       const det = document.createElement("details");
-      det.className = "chip";
+      det.className = "chip" + (isLaw ? " law" : "");
       const sum = document.createElement("summary");
       const title = (lang === "ar" ? s.title_ar : s.title_en) || prettySource(s.title);
       const label = document.createElement("span");
@@ -244,20 +266,29 @@ function fillBot(li, data) {
       label.dataset.en = s.title_en || prettySource(s.title);
       label.dataset.ar = s.title_ar || prettySource(s.title);
       label.textContent = title;
-      sum.append(icon("doc"), label);
+      sum.append(icon(isLaw ? "scale" : "doc"), label);
+      if (isLaw) sum.append(retext("span", "chip-tag", "lawTag"));
       const ex = document.createElement("figure");
       ex.className = "excerpt" + (s.verified ? " verified" : "");
       const cap = document.createElement("figcaption");
-      cap.dataset.key = s.verified ? "quoteLabel" : "quoteUnverified";
+      cap.dataset.key = isLaw ? (s.verified ? "lawQuote" : "lawUnverified") : (s.verified ? "quoteLabel" : "quoteUnverified");
       cap.replaceChildren(...(s.verified ? [icon("check")] : []), document.createTextNode(t(cap.dataset.key)));
       const quote = document.createElement("blockquote");
       quote.dir = "auto";
       quote.textContent = s.snippet;
       ex.append(cap, quote);
+      if (isLaw) ex.append(retext("p", "law-note", "lawNote"));
       det.append(sum, ex);
       box.appendChild(det);
     });
     bubble.appendChild(box);
+  }
+
+  if (data.law_conflict) {
+    const note = document.createElement("p");
+    note.className = "conflict-note";
+    note.append(icon("alert"), retext("span", "", "conflictNote"));
+    bubble.appendChild(note);
   }
 
   if (data.grounded) {
