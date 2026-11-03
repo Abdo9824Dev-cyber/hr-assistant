@@ -81,3 +81,12 @@
   disciplinary appeal window (law: 30 days). Shown on the HR dashboard.
 - Problem: Gemini read "Article 151" as "51" → article numbers only from the full heading, otherwise none.
 - Results: roles 12/12, smoke 27/27 + 8/8, law 9/9, conflict 2/2.
+
+## Day 12 — Security hardening
+- Security headers (CSP with hashed inline script, HSTS, no framing); API docs off in production.
+- Disabled accounts / changed roles take effect immediately (token revocation check).
+- Upload content check (file signature must match its type).
+- Firestore TTL deletes question records after 180 days; buckets locked against public access.
+- Browser API key restricted to sign-in APIs and the site's address; least-privilege service account
+  (removed duplicate and unused roles, storage access limited to the two buckets).
+- Results: security test 25/25 (headers, auth, data exposure, 5 prompt-injection attacks); roles 12/12.

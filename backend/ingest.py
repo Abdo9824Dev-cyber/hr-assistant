@@ -31,6 +31,12 @@ MIME = {
     ".tif": "image/tiff", ".tiff": "image/tiff", ".txt": "text/plain",
 }
 
+# Day 12: the file's first bytes must match its extension (a renamed .exe or script is rejected)
+SIGNATURES = {
+    ".pdf": (b"%PDF-",), ".png": (b"\x89PNG\r\n\x1a\n",), ".jpg": (b"\xff\xd8\xff",), ".jpeg": (b"\xff\xd8\xff",),
+    ".tif": (b"II*\x00", b"MM\x00*"), ".tiff": (b"II*\x00", b"MM\x00*"),
+}
+
 _clients = {}
 
 
@@ -78,6 +84,11 @@ def extract_text(data: bytes, filename: str) -> str:
         raise IngestError("This file type isn't supported. Upload a PDF, image (PNG/JPG/TIFF) or text file.")
     if len(data) > MAX_BYTES:
         raise IngestError("The file is larger than 10 MB. Split it into smaller files.")
+    if ext in SIGNATURES and not data.startswith(SIGNATURES[ext]):
+        raise IngestError("The file's content doesn't match its type. Open it, save it again as a real "
+                          f"{ext[1:].upper()} file and upload that.")
+    if ext == ".txt" and b"\x00" in data[:4096]:
+        raise IngestError("This doesn't look like a text file. Upload a PDF instead.")
     if ext == ".txt":
         try:
             return clean(data.decode("utf-8"))

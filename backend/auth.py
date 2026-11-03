@@ -17,6 +17,7 @@ PROJECT = os.environ["PROJECT_ID"]
 AUTH_DISABLED = os.environ.get("AUTH_DISABLED", "").lower() in ("1", "true", "yes")
 DEV_ROLE = os.environ.get("DEV_ROLE", "employee")
 ROLES = {"employee", "hr_admin"}
+CHECK_REVOKED = os.environ.get("CHECK_REVOKED", "on").lower() in ("on", "1", "true", "yes")
 
 if not AUTH_DISABLED:
     if not firebase_admin._apps:
@@ -35,7 +36,11 @@ def current_user(request: Request) -> dict:
         if not header.lower().startswith("bearer "):
             raise HTTPException(status_code=401, detail="Sign-in required.")
         try:
-            claims = fb_auth.verify_id_token(header.split(" ", 1)[1].strip())
+            # check_revoked (Day 12): a disabled account or a changed role stops working immediately,
+            # not up to an hour later when the old token would expire on its own.
+            claims = fb_auth.verify_id_token(header.split(" ", 1)[1].strip(), check_revoked=CHECK_REVOKED)
+        except fb_auth.UserDisabledError:
+            raise HTTPException(status_code=401, detail="This account is turned off. Contact HR.")
         except Exception:
             raise HTTPException(status_code=401, detail="Your session has expired. Please sign in again.")
         role = claims.get("role", "employee")

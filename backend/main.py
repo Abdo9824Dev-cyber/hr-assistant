@@ -31,6 +31,7 @@ from slowapi.errors import RateLimitExceeded
 
 import analytics
 from admin import router as admin_router
+from security import SecurityHeaders
 from auth import AUTH_DISABLED, current_user
 from messages import DISCLAIMER
 from rag import MODEL, PROJECT, ask
@@ -54,8 +55,13 @@ def client_key(request: Request) -> str:
 
 
 limiter = Limiter(key_func=client_key)
-app = FastAPI(title="HR Assistant API", version="0.11.0",
-              description="Answers employee questions from company HR policies, in Arabic or English.")
+# Day 12: the interactive API docs (/docs) are switched off on Cloud Run - less to explore for an attacker.
+# Locally they stay on. Turn them on in the cloud only for a demo: ENABLE_DOCS=1.
+DOCS = not os.environ.get("K_SERVICE") or os.environ.get("ENABLE_DOCS", "") == "1"
+app = FastAPI(title="HR Assistant API", version="0.12.0",
+              description="Answers employee questions from company HR policies, in Arabic or English.",
+              docs_url="/docs" if DOCS else None, redoc_url=None, openapi_url="/openapi.json" if DOCS else None)
+app.add_middleware(SecurityHeaders)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.include_router(admin_router)          # /admin/documents... (HR admins only)
