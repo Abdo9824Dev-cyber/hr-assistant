@@ -15,6 +15,14 @@ after every deploy.
 | Raw files in Cloud Storage | ❌ | ❌ (only via the app) | ❌ |
 | Question records in Firestore | ❌ | ❌ (only totals on the dashboard) | ❌ |
 
+## Client isolation (one Google Cloud project per client)
+Each client company gets its **own Google Cloud project**: its own sign-in users, search indexes, storage,
+database and billing. Nothing is shared between clients except the code, so one client's documents or users
+can never appear for another — isolation is enforced by Google's project boundary, not by our code.
+- The sign-in token is only accepted if it was issued for this project (checked on every request).
+- The company name is a setting (`COMPANY_NAME_EN`, `COMPANY_NAME_AR`), so the same code is deployed for each client.
+- The public Saudi Labor Law index is the one part that can be rebuilt identically in every client project.
+
 ## Protections in place
 
 **Sign-in and roles**
@@ -45,10 +53,23 @@ after every deploy.
 - The browser API key is restricted to the sign-in APIs and to the site's own address.
 - Question records are anonymous (no name or email) and deleted automatically after 180 days (Firestore TTL).
 - Logs contain metadata only (role, language, timing) — never questions, answers or emails.
+- Employees can download everything held about them ("Your data" link → `GET /me/data`).
+
+**Auto-sync service (`hr-ingest`, Day 12B)**
+- Private: only the Eventarc triggers and the nightly scheduler (signed in as the service account) can call it;
+  anyone else gets 403. It has no web page and no API docs.
+- It reads the raw bucket and writes only to the processed bucket and the search indexes.
+
+**Guardrails (tested in `eval/guardrail_test.py`)**
+- Off-topic questions, invented article numbers and general-knowledge questions get the fixed "contact HR"
+  reply — enforced in code (no cited source → fixed reply), not only by the prompt.
+- A policy document containing hidden instructions ("ignore previous instructions…") cannot change the
+  assistant's behaviour: source text is treated as data.
 
 ## Checklist before handing over to a client
 - [ ] `python eval/security_test.py <url>` — all ok
 - [ ] `python eval/roles_test.py` — 12/12, no `CONF-` source for employees
+- [ ] `python eval/guardrail_test.py` — all ok, then delete the EN-99 test document
 - [ ] Only real HR staff have the `hr_admin` role (`python infra/users.py list`)
 - [ ] Test accounts disabled or deleted
 - [ ] `AUTH_DISABLED` is NOT set on Cloud Run

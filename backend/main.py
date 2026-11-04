@@ -34,7 +34,7 @@ from admin import router as admin_router
 from security import SecurityHeaders
 from auth import AUTH_DISABLED, current_user
 from messages import DISCLAIMER
-from rag import MODEL, PROJECT, ask
+from rag import COMPANY_EN, MODEL, PROJECT, ask
 
 log = logging.getLogger("hr-api")
 logging.basicConfig(level=logging.INFO)
@@ -43,6 +43,7 @@ RATE_LIMIT = os.environ.get("RATE_LIMIT", "20/minute")
 FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY", "")
 FIREBASE_AUTH_DOMAIN = os.environ.get("FIREBASE_AUTH_DOMAIN", f"{PROJECT}.firebaseapp.com")
 STATIC_DIR = pathlib.Path(__file__).parent / "static"
+COMPANY_AR = os.environ.get("COMPANY_NAME_AR", "شركة النور التجارية")
 
 
 def client_key(request: Request) -> str:
@@ -96,7 +97,8 @@ class AnswerOut(BaseModel):
 @app.get("/config")
 def config():
     """Public settings the page needs to show the sign-in form (these values are not secrets)."""
-    return {"auth_disabled": AUTH_DISABLED, "api_key": FIREBASE_API_KEY, "auth_domain": FIREBASE_AUTH_DOMAIN}
+    return {"auth_disabled": AUTH_DISABLED, "api_key": FIREBASE_API_KEY, "auth_domain": FIREBASE_AUTH_DOMAIN,
+            "company_en": COMPANY_EN, "company_ar": COMPANY_AR}
 
 
 @app.get("/health")
@@ -107,6 +109,30 @@ def health():
 @app.get("/me")
 def me(user: dict = Depends(current_user)):
     return {"email": user["email"], "role": user["role"]}
+
+
+@app.get("/me/data")
+def my_data(user: dict = Depends(current_user)):
+    """PDPL (Day 12B): everything this service holds about the signed-in employee, as a download."""
+    account = {"email": user["email"], "role": user["role"], "department": user.get("department", "")}
+    if not AUTH_DISABLED:
+        try:
+            from firebase_admin import auth as fb_auth
+            u = fb_auth.get_user(user["uid"])
+            ms = u.user_metadata
+            account.update(created=ms.creation_timestamp, last_sign_in=ms.last_sign_in_timestamp,
+                           disabled=u.disabled)
+        except Exception:
+            log.warning("could not read account details for /me/data")
+    return {
+        "company": COMPANY_EN,
+        "account": account,
+        "questions": ("Your questions are recorded WITHOUT your name or email (anonymous statistics for HR), "
+                      "so they cannot be linked to you or listed here. They are deleted automatically after "
+                      f"{analytics.RETENTION_DAYS} days."),
+        "chat_history": "Not stored. Conversations stay in your browser tab and disappear when you close it.",
+        "how_to_correct_or_delete": "Ask HR to update or delete your account.",
+    }
 
 
 @app.post("/ask", response_model=AnswerOut)

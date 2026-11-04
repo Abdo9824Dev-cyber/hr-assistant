@@ -28,6 +28,9 @@ const I18N = {
     by: "Added by", initialImport: "Initial import", delete: "Delete",
     confirmDelete: (t) => `Delete "${t}"? The assistant will stop answering from it. This can't be undone.`,
     deleteFailed: "The document wasn't deleted. Try again.",
+    replace: "Replace with a new version", replacing: "Uploading the new version…",
+    replaced: (t) => `"${t}" was replaced. The new version will be ready in a few minutes.`,
+    folderSync: "Added from the storage folder",
   },
   ar: {
     title: "مساعد الموارد البشرية", company: "شركة النور التجارية", back: "المحادثة", dashboard: "لوحة المؤشرات",
@@ -55,6 +58,9 @@ const I18N = {
     by: "أضافه", initialImport: "استيراد أولي", delete: "حذف",
     confirmDelete: (t) => `حذف "${t}"؟ سيتوقف المساعد عن الإجابة منه. لا يمكن التراجع عن ذلك.`,
     deleteFailed: "لم يتم حذف المستند. حاول مرة أخرى.",
+    replace: "استبدال بنسخة جديدة", replacing: "جارٍ رفع النسخة الجديدة…",
+    replaced: (t) => `تم استبدال "${t}". ستكون النسخة الجديدة جاهزة خلال دقائق.`,
+    folderSync: "أُضيف من مجلد التخزين",
   },
 };
 
@@ -135,6 +141,11 @@ async function start() {
   setState("loading");
   const cfg = await (await fetch("/config")).json();
   authDisabled = cfg.auth_disabled;
+  if (cfg.company_en) {   // the client's company name (set on the server per client)
+    I18N.en.company = cfg.company_en;
+    I18N.ar.company = cfg.company_ar || cfg.company_en;
+    applyLang();
+  }
   if (authDisabled) { $("sign-out").hidden = true; return enter(); }
   const { initializeApp } = await import(`${FIREBASE_SDK}/firebase-app.js`);
   fb = await import(`${FIREBASE_SDK}/firebase-auth.js`);
@@ -212,8 +223,10 @@ function renderDocs() {
     const meta = document.createElement("span");
     meta.className = "doc-meta muted";
     [t(d.store === "confidential" ? "hrOnly" : "allEmployees"),
-      d.uploaded_by === "initial import" ? t("initialImport") : (d.uploaded_by ? `${t("by")} ${d.uploaded_by}` : ""),
-      formatDate(d.updated_at)].filter(Boolean).forEach((part) => {
+      d.uploaded_by === "initial import" ? t("initialImport")
+        : d.uploaded_by === "folder sync" ? t("folderSync")
+        : (d.uploaded_by ? `${t("by")} ${d.uploaded_by}` : ""),
+      formatDate(d.updated_at), d.status === "failed" ? d.error : ""].filter(Boolean).forEach((part) => {
       const span = document.createElement("span");
       span.dir = "auto";
       span.textContent = part;
@@ -233,7 +246,15 @@ function renderDocs() {
     del.appendChild(icon("trash"));
     del.addEventListener("click", () => removeDoc(d, title.textContent, del));
 
-    li.append(ico, main, status, del);
+    const rep = document.createElement("button");
+    rep.type = "button";
+    rep.className = "icon-btn round";
+    rep.title = `${t("replace")}: ${title.textContent}`;
+    rep.setAttribute("aria-label", rep.title);
+    rep.appendChild(icon("upload"));
+    rep.addEventListener("click", () => { replaceTarget = d; $("replace-file").value = ""; $("replace-file").click(); });
+
+    li.append(ico, main, status, rep, del);
     list.appendChild(li);
   });
 }
@@ -252,6 +273,34 @@ async function removeDoc(d, title, button) {
     alert(t("deleteFailed"));
   }
 }
+
+/* ---------- Replace (Day 12B): new version, same document ---------- */
+let replaceTarget = null;
+$("replace-file").addEventListener("change", async () => {
+  const f = $("replace-file").files[0];
+  const d = replaceTarget;
+  if (!f || !d) return;
+  const title = lang === "ar" ? d.title_ar : d.title_en;
+  if (f.size > MAX_BYTES) { showMsg("tooBig"); return; }
+  const form = new FormData();
+  form.append("file", f);
+  form.append("store", d.store);
+  form.append("title_en", d.title_en);
+  form.append("title_ar", d.title_ar);
+  form.append("replace", d.id);
+  showMsg("", true, t("replacing"));
+  try {
+    const res = await fetch("/admin/documents", { method: "POST", headers: await authHeader(), body: form });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { showMsg(body.detail ? "" : "uploadFailed", false, typeof body.detail === "string" ? body.detail : ""); return; }
+    showMsg("", true, t("replaced", title));
+    docs = docs.filter((x) => x.id !== body.id).concat(body);
+    renderDocs();
+    schedulePoll();
+  } catch {
+    showMsg("uploadFailed");
+  }
+});
 
 /* ---------- Upload ---------- */
 function showMsg(key, ok = false, text = "") {

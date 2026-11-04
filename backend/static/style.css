@@ -482,3 +482,6 @@ a.icon-btn { text-decoration: none; color: inherit; }
   background: color-mix(in srgb, var(--c-to-hr) 12%, transparent); color: var(--ink);
 }
 .conflict-note svg { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--c-to-hr); }
+
+/* "Your data" link in the footer (Day 12B) */
+.link-btn { border: 0; background: none; padding: 0; font: inherit; color: var(--brand); text-decoration: underline; cursor: pointer; }

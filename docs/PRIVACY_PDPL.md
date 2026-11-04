@@ -43,9 +43,13 @@ For a client whose data must stay in Saudi Arabia, plan a deployment using Googl
 Discuss this with the client before go-live — it affects which services and models can be used.
 
 ## Employee rights (how to handle requests)
-- **Access / correction of account data:** HR updates it with `infra/users.py`.
-- **Deletion:** delete the account (`infra/users.py delete <email>`). Question records hold no identity, so
-  they cannot be linked back to a person; they expire after 180 days.
+- **Access:** each employee can download their data with the **"Your data"** link under the chat box
+  (`GET /me/data`: account details, plus an explanation that questions are anonymous and not stored per person).
+- **Correction of account data:** HR updates it with `infra/users.py`.
+- **Deletion:** delete the account (`infra/users.py delete <email>`). There is no per-person chat history to
+  delete: conversations live only in the browser tab, and question records hold no identity (they cannot be
+  linked back to a person) and expire after 180 days. Privacy by design: we avoid storing what we would
+  otherwise have to delete.
 - **Information:** show employees a short notice on the chat page (the empty screen already states that
   answers come from company policies; add the client's privacy notice link there).
 

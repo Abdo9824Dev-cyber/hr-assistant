@@ -90,3 +90,12 @@
 - Browser API key restricted to sign-in APIs and the site's address; least-privilege service account
   (removed duplicate and unused roles, storage access limited to the two buckets).
 - Results: security test 25/25 (headers, auth, data exposure, 5 prompt-injection attacks); roles 12/12.
+
+## Day 12B — Auto-sync ingestion
+- The raw bucket is the source of truth: Eventarc triggers + private hr-ingest service (same code, sync:app)
+  index any file added, replaced, moved or deleted — portal or not — within minutes.
+- Nightly reconcile (02:00 Riyadh) repairs missed events; dry-run mode and a mass-deletion safety limit.
+- Existing 17 documents (incl. the law) adopted without re-indexing. Portal gained Replace + failure reasons.
+- Problems: Cloud Storage and Eventarc service agents weren't provisioned → created with
+  `gcloud beta services identity create`; browser key blocked the second Cloud Run URL → both URLs allowed.
+- Demo: gym policy dropped into the folder → cited answer; file removed → "contact HR".

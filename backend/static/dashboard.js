@@ -135,6 +135,11 @@ async function start() {
   setState("loading");
   const cfg = await (await fetch("/config")).json();
   authDisabled = cfg.auth_disabled;
+  if (cfg.company_en) {   // the client's company name (set on the server per client)
+    I18N.en.company = cfg.company_en;
+    I18N.ar.company = cfg.company_ar || cfg.company_en;
+    applyLang();
+  }
   if (authDisabled) { $("sign-out").hidden = true; return load(); }
   const { initializeApp } = await import(`${FIREBASE_SDK}/firebase-app.js`);
   fb = await import(`${FIREBASE_SDK}/firebase-auth.js`);

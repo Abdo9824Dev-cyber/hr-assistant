@@ -7,6 +7,10 @@
 Every document has a record in Firestore, collection "documents" (id = file name without extension):
     title_en, title_ar, store, status (indexing | ready | failed | deleted), gcs_raw, gcs_text,
     operation, chars, uploaded_by, created_at, updated_at, deleted_by
+    + Day 12B: generation (version of the original file), error (why it failed), source (portal | sync)
+
+Day 12B: files added to the raw bucket any other way are handled by the auto-sync service (sync.py).
+Portal uploads are tagged source=portal on the file, so the sync service leaves them to the portal.
 """
 import logging
 import os
@@ -47,6 +51,7 @@ def public(doc_id: str, d: dict) -> dict:
         "status": d.get("status", "ready"),
         "chars": d.get("chars", 0),
         "uploaded_by": d.get("uploaded_by", ""),
+        "error": d.get("error", ""),
         "updated_at": updated.isoformat() if hasattr(updated, "isoformat") else None,
     }
 
@@ -56,7 +61,7 @@ def list_documents(user: dict = Depends(require_hr_admin)):
     out = []
     for snap in db().collection(COLLECTION).stream():
         d = snap.to_dict() or {}
-        if d.get("status") == "deleted":
+        if d.get("status") == "deleted" or d.get("store") == "law":   # the law is managed separately
             continue
         if d.get("status") == "indexing":
             try:
@@ -77,23 +82,35 @@ async def upload_document(
     store: str = Form(...),
     title_en: str = Form(..., min_length=2, max_length=120),
     title_ar: str = Form(..., min_length=2, max_length=120),
+    replace: str = Form(""),          # Day 12B: id of the document this file replaces (Replace button)
     user: dict = Depends(require_hr_admin),
 ):
     if store not in STORES:
         raise HTTPException(422, "Choose who can see the document: all employees or HR only.")
-    name = ingest.safe_name(file.filename or "document")
+    name = replace or ingest.safe_name(file.filename or "document")
     ref = db().collection(COLLECTION).document(name)
     existing = ref.get()
-    if existing.exists and (existing.to_dict() or {}).get("status") != "deleted":
+    old = (existing.to_dict() or {}) if existing.exists else {}
+    active = existing.exists and old.get("status") != "deleted"
+    if active and not replace:
         raise HTTPException(409, "A document with this file name already exists. "
-                                 "Delete it first to replace it, or rename the file.")
+                                 "Use Replace on that document to upload a new version, or rename the file.")
+    if replace and not active:
+        raise HTTPException(404, "The document to replace doesn't exist any more. Refresh the page.")
 
     data = await file.read(ingest.MAX_BYTES + 1)
     try:
         text = ingest.extract_text(data, file.filename or "")
         if len(text) < 20:
             raise ingest.IngestError("No readable text was found. Check the scan quality and try again.")
-        paths = ingest.save_files(store, name, file.filename or "", data, text)
+        if replace:   # the new version is readable: now take the old one out of the index
+            ingest.remove_from_index(old.get("store", store), old.get("gcs_text", ""))
+            if old.get("store", store) != store:
+                ingest.delete_files(old.get("gcs_text", ""))
+        paths = ingest.save_files(store, name, file.filename or "", data, text,
+                                  metadata={"source": "portal", "uploaded_by": user["email"]})
+        if replace and old.get("gcs_raw") and old["gcs_raw"] != paths["gcs_raw"]:
+            ingest.delete_files(old["gcs_raw"])          # e.g. a .png replaced by a .pdf
         operation = ingest.start_import(store, paths["gcs_text"])
     except ingest.IngestError as e:
         raise HTTPException(422, str(e))
@@ -104,8 +121,8 @@ async def upload_document(
     record = {
         "title_en": title_en.strip(), "title_ar": title_ar.strip(), "store": store,
         "status": "indexing", "operation": operation, "chars": len(text),
-        "uploaded_by": user["email"], "created_at": now(), "updated_at": now(),
-        **paths,
+        "uploaded_by": user["email"], "created_at": old.get("created_at") or now(), "updated_at": now(),
+        "source": "portal", "error": "", **paths,
     }
     ref.set(record)
     log.info("document uploaded id=%s store=%s chars=%d", name, store, len(text))  # no content in logs

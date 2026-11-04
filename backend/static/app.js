@@ -20,6 +20,7 @@ const I18N = {
     lawNote: "General information from the law, not legal advice.",
     conflictNote: "The company policy may give less than the Saudi Labor Law requires. This is flagged on the HR dashboard; confirm with HR.",
     disclaimer: "Answers are for guidance. Confirm important decisions with HR.",
+    myData: "Your data",
     errNetwork: "The assistant didn't respond. Check your connection and ask again.",
     errLimit: "That's many questions in one minute. Wait a moment, then ask again.",
     errServer: "The assistant is unavailable right now. Ask again in a minute.",
@@ -61,6 +62,7 @@ const I18N = {
     lawNote: "معلومات عامة من النظام، وليست استشارة قانونية.",
     conflictNote: "قد تمنح سياسة الشركة أقل مما يشترطه نظام العمل السعودي. تظهر هذه الحالة في لوحة مؤشرات الموارد البشرية؛ يرجى التأكد معهم.",
     disclaimer: "الإجابات للاسترشاد. يرجى التأكد من القرارات المهمة مع الموارد البشرية.",
+    myData: "بياناتك",
     errNetwork: "لم يصل رد من المساعد. تحقق من الاتصال ثم اسأل مرة أخرى.",
     errLimit: "أسئلة كثيرة خلال دقيقة واحدة. انتظر قليلاً ثم اسأل مرة أخرى.",
     errServer: "المساعد غير متاح الآن. اسأل مرة أخرى بعد دقيقة.",
@@ -377,6 +379,18 @@ $("q").addEventListener("input", (e) => {   // grow with the text
 /* ---------- Sign-in (Google Identity Platform) ---------- */
 const FIREBASE_SDK = "https://www.gstatic.com/firebasejs/10.12.2";
 
+// PDPL: download everything the service holds about the signed-in user
+$("my-data").addEventListener("click", async () => {
+  try {
+    const res = await fetch("/me/data", { headers: await authHeader() });
+    if (!res.ok) throw new Error(String(res.status));
+    const blob = new Blob([JSON.stringify(await res.json(), null, 2)], { type: "application/json" });
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "my-hr-assistant-data.json" });
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch { /* nothing to download right now */ }
+});
+
 async function authHeader() {
   if (authDisabled || !fbAuth || !fbAuth.currentUser) return {};
   return { Authorization: `Bearer ${await fbAuth.currentUser.getIdToken()}` }; // refreshed automatically
@@ -421,7 +435,12 @@ function clearChat() {
 async function initAuth() {
   const cfg = await (await fetch("/config")).json();
   authDisabled = cfg.auth_disabled;
-  if (authDisabled) { await loadProfile(); return; }
+  if (cfg.company_en) {   // the client's company name (set on the server per client)
+    I18N.en.company = cfg.company_en;
+    I18N.ar.company = cfg.company_ar || cfg.company_en;
+    applyLang();
+  }
+  if (authDisabled) { $("my-data").hidden = false; await loadProfile(); return; }
 
   const { initializeApp } = await import(`${FIREBASE_SDK}/firebase-app.js`);
   fb = await import(`${FIREBASE_SDK}/firebase-auth.js`);
@@ -429,6 +448,7 @@ async function initAuth() {
 
   fb.onAuthStateChanged(fbAuth, async (user) => {
     $("sign-out").hidden = !user;
+    $("my-data").hidden = !user;
     if (user) {
       $("sign-out").title = `${t("signOut")} (${user.email})`;
       if ($("signin").open) $("signin").close();

@@ -1,4 +1,5 @@
-"""Day 9: add and remove documents from the live system (used by the admin API).
+"""Day 9: add and remove documents from the live system (used by the admin API and, since Day 12B,
+by the auto-sync service in sync.py - one copy of the logic for both).
 
 Upload:  file -> OCR (Document AI) -> raw file + clean text in Cloud Storage -> import into the search index
 Delete:  remove from the search index -> delete the files from Cloud Storage
@@ -24,6 +25,7 @@ TEXT_BUCKET = f"{PROJECT}-processed"
 DATASTORES = {
     "policies": os.environ.get("DATASTORE_ID", ""),
     "confidential": os.environ.get("CONFIDENTIAL_DATASTORE_ID", ""),
+    "law": os.environ.get("LAW_DATASTORE_ID", "saudi-labor-law"),      # Day 11 (PDFs, layout parser, no OCR)
 }
 MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 MIME = {
@@ -60,8 +62,10 @@ class IngestError(Exception):
 
 
 def safe_name(filename: str) -> str:
-    """'Housing Policy 2026.pdf' -> 'Housing_Policy_2026' (letters, digits, - and _ only)."""
+    """'Housing Policy 2026.pdf' -> 'Housing_Policy_2026' (letters, digits, - and _ only).
+    The Day 2 'SCAN_' prefix is dropped, so a scanned original matches its document record."""
     stem = filename.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    stem = stem[5:] if stem.startswith("SCAN_") else stem
     stem = re.sub(r"[^A-Za-z0-9_-]+", "_", stem).strip("_")
     return stem[:80] or "document"
 
@@ -112,13 +116,37 @@ def text_uri(store: str, name: str) -> str:
     return f"gs://{TEXT_BUCKET}/{store}/{name}.txt"
 
 
-def save_files(store: str, name: str, filename: str, data: bytes, text: str) -> dict:
-    gcs = _client("gcs")
-    raw_path = f"{store}/{name}{extension(filename)}"
-    gcs.bucket(RAW_BUCKET).blob(raw_path).upload_from_string(data, content_type=MIME[extension(filename)])
-    gcs.bucket(TEXT_BUCKET).blob(f"{store}/{name}.txt").upload_from_string(
+def save_text(store: str, name: str, text: str) -> str:
+    """Write the clean text to the PROCESSED bucket (never the raw bucket: that would trigger auto-sync again)."""
+    _client("gcs").bucket(TEXT_BUCKET).blob(f"{store}/{name}.txt").upload_from_string(
         text, content_type="text/plain; charset=utf-8")
-    return {"gcs_raw": f"gs://{RAW_BUCKET}/{raw_path}", "gcs_text": text_uri(store, name)}
+    return text_uri(store, name)
+
+
+def save_files(store: str, name: str, filename: str, data: bytes, text: str, metadata: dict | None = None) -> dict:
+    """Save the original (raw bucket) and the text (processed bucket). `metadata` is stored on the original:
+    source=portal tells the auto-sync service this upload is already handled (Day 12B)."""
+    raw_path = f"{store}/{name}{extension(filename)}"
+    blob = _client("gcs").bucket(RAW_BUCKET).blob(raw_path)
+    blob.metadata = metadata or None
+    blob.upload_from_string(data, content_type=MIME[extension(filename)])
+    return {"gcs_raw": f"gs://{RAW_BUCKET}/{raw_path}", "gcs_text": save_text(store, name, text),
+            "generation": str(blob.generation or "")}
+
+
+def start_import_uri(store: str, uri: str) -> str:
+    """Import one file (text, or for the law store the PDF itself) into the store's index."""
+    op = _client("docs").import_documents(de.ImportDocumentsRequest(
+        parent=_branch(store),
+        gcs_source=de.GcsSource(input_uris=[uri], data_schema="content"),
+        reconciliation_mode=de.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL,
+    ))
+    return op.operation.name
+
+
+def indexed_uris(store: str) -> set:
+    """Source files currently in a store's index (read-only)."""
+    return {d.content.uri for d in _client("docs").list_documents(parent=_branch(store)) if d.content}
 
 
 def _branch(store: str) -> str:
