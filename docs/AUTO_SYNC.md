@@ -36,3 +36,21 @@ The system never decides that a policy is outdated: a person deletes, moves or r
   bucket looks empty. It can always be run as a dry run first:
   `python backend/sync.py reconcile --dry-run`
 - Text is written only to the processed bucket, never to the raw bucket (no event loops).
+
+## Google Drive (Day 12C)
+HR can keep policies in Google Drive instead of uploading them. Every 15 minutes (`hr-drive-sync` job →
+`hr-ingest /drive-sync`) the shared Drive folder is mirrored into the raw bucket, and auto-sync does the rest.
+
+| Drive sub-folder | Bucket folder |
+|---|---|
+| `Policies` (or `السياسات`) | `policies/` |
+| `HR Confidential` / `Confidential` (or `سري`) | `confidential/` |
+| `Labor Law` / `Law` (or `نظام العمل`) | `law/` (PDF only) |
+
+- Supported: PDF, PNG, JPG, TIFF, TXT, and **Google Docs** (exported as PDF). Word files: save as PDF first.
+- Edited in Drive → updated. Deleted, renamed or moved → the old copy is removed.
+- English title = file name; Arabic title = the file's Drive **description** (if it contains Arabic).
+- Read-only access: the folder is shared with the service account as **Viewer**. Nothing in Drive is changed.
+- Safety: only files that came from Drive are ever replaced or removed in the bucket; portal uploads are never
+  touched. If Drive returns no files (e.g. the folder was unshared), nothing is removed.
+- Test without changing anything: `POST /drive-sync?dry_run=1`.

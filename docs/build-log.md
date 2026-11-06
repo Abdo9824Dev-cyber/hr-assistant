@@ -99,3 +99,11 @@
 - Problems: Cloud Storage and Eventarc service agents weren't provisioned → created with
   `gcloud beta services identity create`; browser key blocked the second Cloud Run URL → both URLs allowed.
 - Demo: gym policy dropped into the folder → cited answer; file removed → "contact HR".
+
+## Day 13 — Evaluation with an AI judge
+- 50-question test set (18 Arabic, 32 English; policy, Labor Law, conflict, conditional, refusal, role).
+- AI judge grades every answer; also checks citations, leaks, language, misleading Yes/No, consistency, cost.
+- Fixes: conditional answers no longer start with a bare Yes/No; temperature 0 for consistency;
+  "answer the question asked" + bonus vs end-of-service terminology (Arabic مكافأة); Arabic file names.
+- Model is a setting: Gemini (default) or Claude on Google Cloud (RAG_MODEL).
+- Results: 98% correct, 100% correct sources, 0 leaks, 96% consistent, 4.5 s median, ~$7 per 1,000 questions.

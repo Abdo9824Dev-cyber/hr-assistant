@@ -8,6 +8,7 @@ Stores ("where a document lives"):
     policies      -> gs://<project>-processed/policies/      -> data store DATASTORE_ID          (all employees)
     confidential  -> gs://<project>-processed/confidential/  -> data store CONFIDENTIAL_DATASTORE_ID (HR only)
 """
+import hashlib
 import os
 import re
 import unicodedata
@@ -66,8 +67,13 @@ def safe_name(filename: str) -> str:
     The Day 2 'SCAN_' prefix is dropped, so a scanned original matches its document record."""
     stem = filename.rsplit("/", 1)[-1].rsplit(".", 1)[0]
     stem = stem[5:] if stem.startswith("SCAN_") else stem
-    stem = re.sub(r"[^A-Za-z0-9_-]+", "_", stem).strip("_")
-    return stem[:80] or "document"
+    clean = re.sub(r"[^A-Za-z0-9_-]+", "_", stem).strip("_")
+    if re.search(r"[^\x00-\x7F]", stem):
+        # Arabic (or other non-Latin) names: add a short fingerprint of the full name, so each Arabic file gets
+        # its own stable id ('سياسة النادي الرياضي' -> 'doc-1a2b3c4d5e'; same name -> same id).
+        tag = hashlib.sha1(stem.strip().encode("utf-8")).hexdigest()[:10]
+        clean = f"{clean[:60]}_{tag}" if clean else f"doc-{tag}"
+    return clean[:80] or "document"
 
 
 def extension(filename: str) -> str:

@@ -8,6 +8,7 @@ Runs as a PRIVATE Cloud Run service "hr-ingest" (same code and image as the app,
     POST /ingest      Eventarc: google.cloud.storage.object.v1.finalized  (file created or overwritten)
     POST /delete      Eventarc: google.cloud.storage.object.v1.deleted    (file deleted, moved, or overwritten)
     POST /reconcile   Cloud Scheduler, nightly   (?dry_run=1 only reports the plan)
+    POST /drive-sync  Cloud Scheduler, every 15 min: Google Drive folder -> raw bucket (Day 12C, drive_sync.py)
 
 Safety rules (nothing that exists today is destroyed):
   - Portal uploads (file metadata source=portal) are left to the portal - no double OCR.
@@ -98,7 +99,8 @@ def ingest_file(path: str, generation: str, force: bool = False) -> str:
 
     titles = {k: meta.get(k) or rec.get(k) or default_titles(name)[k] for k in ("title_en", "title_ar")}
     base = {"store": store, "gcs_raw": raw_uri, "generation": generation, "source": "sync",
-            "uploaded_by": rec.get("uploaded_by") or "folder sync", "updated_at": now(), **titles}
+            "uploaded_by": rec.get("uploaded_by") or meta.get("uploaded_by") or "folder sync",
+            "updated_at": now(), **titles}
     if not rec.get("created_at"):
         base["created_at"] = now()
     try:
@@ -250,6 +252,13 @@ def nightly(dry_run: int = 0):
     plan = reconcile(dry_run=bool(dry_run))
     log.info("reconcile dry_run=%s adopt=%d ingest=%d remove=%d clash=%d warnings=%s", bool(dry_run),
              len(plan["adopt"]), len(plan["ingest"]), len(plan["remove"]), len(plan["clash"]), plan["warnings"])
+    return plan
+
+
+@app.post("/drive-sync")
+def drive_sync_route(dry_run: int = 0):
+    import drive_sync
+    plan = drive_sync.sync(dry_run=bool(dry_run))
     return plan
 
 

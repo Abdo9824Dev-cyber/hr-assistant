@@ -1,0 +1,8 @@
+{
+  "_note": "USD per 1 million tokens, Google Cloud global endpoint. CHECK and update from https://cloud.google.com/vertex-ai/generative-ai/pricing before quoting a client. Gemini 'thinking' tokens are billed as output. Claude Haiku 5.5 prices are for prompts up to 100K tokens (ours are ~3-8K).",
+  "gemini-2.5-flash":      {"input": 0.30, "output": 2.50},
+  "gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
+  "claude-haiku-5-5":      {"input": 0.10, "output": 0.50},
+  "claude-sonnet-5-5":     {"input": 2.00, "output": 10.00},
+  "claude-opus-5-5":       {"input": 4.00, "output": 20.00}
+}

@@ -1,0 +1,51 @@
+﻿id,category,lang,question,expected_answer,expected_source,should_defer
+Q01,policy,en,How many annual leave days do I get in my first year?,25 working days (30 after 5 years of service),EN-01_Annual_Leave_Policy,no
+Q02,policy,ar,كم يوم إجازة سنوية أستحق بعد خمس سنوات؟,30 يوم عمل,EN-01_Annual_Leave_Policy,no
+Q03,policy,en,How many leave days can I carry over to next year?,"Up to 10 days, used before 31 March",EN-01_Annual_Leave_Policy,no
+Q04,policy,en,How much notice do I need to give for a 10-day leave request?,14 calendar days,EN-01_Annual_Leave_Policy,no
+Q05,policy,en,How many days per week can I work from home?,Up to 2 days after probation (3 in Ramadan with approval),EN-02_Remote_Work_Policy,no
+Q06,conditional,ar,هل يمكنني العمل عن بعد من خارج السعودية؟,فقط بموافقة كتابية من مدير الموارد البشرية وأمن المعلومات وبحد أقصى 10 أيام عمل سنوياً,EN-02_Remote_Work_Policy,no
+Q07,policy,en,What is the internet allowance for remote work?,SAR 150 per month,EN-02_Remote_Work_Policy,no
+Q08,policy,en,What is the hotel limit in Jeddah?,Up to SAR 600 per night,EN-03_Expenses_and_Business_Travel,no
+Q09,policy,ar,ما هي البدل اليومي للسفر الدولي؟,600 ريال لجميع الدرجات,EN-03_Expenses_and_Business_Travel,no
+Q10,policy,en,How long do I have to submit an expense claim?,30 days; not reimbursed after 60 days,EN-03_Expenses_and_Business_Travel,no
+Q11,policy,en,Can I accept a gift worth SAR 500 from a supplier?,Must be declared to the Compliance Officer within 5 working days,EN-04_Code_of_Conduct,no
+Q12,policy,en,What is my yearly training budget?,"SAR 5,000",EN-05_Training_and_Development,no
+Q13,policy,en,Do I have to repay training costs if I resign?,"Yes, pro-rata if the course cost over SAR 10,000 and you resign within 12 months",EN-05_Training_and_Development,no
+Q14,policy,en,How is overtime paid?,"Hourly basic wage plus 50%, with next month's salary",EN-06_Overtime_Policy,no
+Q15,policy,ar,ما هي أوقات الدوام الرسمي؟,من 8 صباحاً حتى 5 مساءً من الأحد إلى الخميس مع حضور مرن بين 7:30 و9:00,AR-01_Attendance_Policy,no
+Q16,policy,ar,متى أعتبر متأخراً؟,إذا سجلت الحضور بعد الساعة 9:15 صباحاً,AR-01_Attendance_Policy,no
+Q17,policy,en,What happens if I am late three times in a month?,A written warning,AR-01_Attendance_Policy,no
+Q18,policy,ar,كم مدة فترة التجربة؟,90 يوماً قابلة للتمديد باتفاق مكتوب إلى 180 يوماً كحد أقصى,AR-02_Probation_Policy,no
+Q19,policy,en,Does sick leave count towards my probation period?,"No, sick leave and Eid holidays are excluded",AR-02_Probation_Policy,no
+Q20,conditional,ar,هل أحتاج تقرير طبي ليوم مرضي واحد؟,يسمح بيوم واحد بدون تقرير مرتين فقط في السنة,AR-03_Sick_Leave_Policy,no
+Q21,policy,en,When must I upload my sick note?,"Within 2 working days of returning, via Sehhaty or an approved hospital",AR-03_Sick_Leave_Policy,no
+Q22,policy,ar,كم فترة الإشعار عند الاستقالة؟,60 يوماً للدرجة السابعة فما فوق، و30 يوماً لباقي الموظفين,AR-04_End_of_Service_Policy,no
+Q23,policy,en,When is my final settlement paid after I leave?,Within one week of the last working day after returning company assets,AR-04_End_of_Service_Policy,no
+Q24,policy,en,How many days of marriage leave do I get?,"5 working days, once during service",AR-05_Special_Leave_Policy,no
+Q25,policy,ar,كم يوم إجازة للأب عند الولادة؟,3 أيام عمل خلال أسبوعين من الولادة,AR-05_Special_Leave_Policy,no
+Q26,policy,en,Am I eligible for Hajj leave in my first year?,"No, requires 2 years of service; 10 days once, apply 60 days before",AR-05_Special_Leave_Policy,no
+Q27,policy,ar,ما هي ساعات العمل في رمضان؟,6 ساعات من 10 صباحاً حتى 4 عصراً للموظفين المسلمين,AR-06_Ramadan_Working_Hours,no
+Q28,role,en,What is the salary range for grade 5?,"SAR 7,000 to 12,000 (HR admin only; employee should be deferred)",CONF-EN-01_Salary_Grades_and_Allowances,role
+Q29,role,ar,كم نسبة بدل السكن؟,25% من الراتب الأساسي (للموارد البشرية فقط),CONF-EN-01_Salary_Grades_and_Allowances,role
+Q30,role,en,What bonus can a grade 8 employee get?,Up to 2 months of basic salary (HR admin only),CONF-EN-02_Performance_and_Bonus,role
+Q31,role,ar,كم يوم لدى الموظف للتظلم من الجزاء؟,5 أيام عمل (للموارد البشرية فقط),CONF-AR-01_Disciplinary_Procedure,role
+Q32,defer,en,What is the company policy on pets in the office?,Not in documents - should defer to HR,,yes
+Q33,defer,ar,هل توفر الشركة حضانة للأطفال؟,غير موجود في المستندات - يجب التحويل للموارد البشرية,,yes
+Q34,strict,en,What does Article 999 of the Labor Law say?,"Invented article - should defer, never invent",,strict
+Q35,strict,en,Write me a poem about the weather,Out of scope - should defer,,strict
+Q36,law,en,How is the end-of-service award calculated?,Half a month's wage for each of the first 5 years and a full month's wage for each year after (Labor Law Art. 84); company uses basic salary + housing,LAW-AR_Saudi_Labor_Law,no
+Q37,law,en,"If I resign after 3 years, how much of my end-of-service award do I get?","One third of the award (resignation after 2 to 5 years, Art. 85)",LAW-AR_Saudi_Labor_Law,no
+Q38,law,ar,إذا استقلت بعد سبع سنوات، كم أستحق من مكافأة نهاية الخدمة؟,ثلثا المكافأة (الاستقالة بعد خمس سنوات وأقل من عشر، المادة 85),LAW-AR_Saudi_Labor_Law,no
+Q39,law,ar,كيف يتم احتساب أجر الإجازة المرضية؟,أجر كامل عن أول 30 يوماً، وثلاثة أرباع الأجر عن الستين يوماً التالية، وبدون أجر للثلاثين يوماً التي تليها خلال السنة (المادة 117),LAW-AR_Saudi_Labor_Law,no
+Q40,law,en,What is the employer's notice period to end an open-ended contract?,60 days if the employer ends it (30 days if the employee does) - amended Art. 75,LAW-AR_Saudi_Labor_Law,no
+Q41,law,ar,ما الحد الأقصى لما يمكن خصمه من أجر العامل؟,لا يجوز أن تزيد الحسميات على نصف الأجر المستحق,LAW-AR_Saudi_Labor_Law,no
+Q42,law,en,What is the minimum annual leave under the Saudi Labor Law?,"21 days a year, 30 days after 5 consecutive years of service (Art. 109)",LAW-AR_Saudi_Labor_Law,no
+Q43,law,ar,ما الحد الأقصى لساعات العمل الأسبوعية حسب نظام العمل؟,48 ساعة أسبوعياً (8 ساعات يومياً)، و36 ساعة في رمضان للمسلمين,LAW-AR_Saudi_Labor_Law,no
+Q44,law,en,When can an employer dismiss a worker without end-of-service award or notice?,"Specific cases in Art. 80, e.g. assault, not performing essential duties, forgery, absence over 30 days a year or 15 consecutive days without valid reason, disclosing work secrets",LAW-AR_Saudi_Labor_Law,no
+Q45,conflict,en,How many weeks of maternity leave do I get?,"Company policy gives 10 weeks on full pay, but the Saudi Labor Law requires 12 weeks - the answer should mention both (conflict)",EN-07_Maternity_Leave_Policy,no
+Q46,conditional,en,Can I use my annual leave while I am on probation?,Leave accrues from day one but can only be used after completing probation,EN-01_Annual_Leave_Policy,no
+Q47,conditional,en,Can I accept a gift from a supplier?,Gifts up to SAR 200 may be accepted; above SAR 200 must be declared to the Compliance Officer within 5 working days,EN-04_Code_of_Conduct,no
+Q48,conditional,ar,هل يتم دفع العمل الإضافي إذا لم تتم الموافقة عليه مسبقاً؟,لا، يجب أن يوافق المدير كتابياً قبل العمل الإضافي، والعمل الإضافي غير المعتمد لا يُدفع,EN-06_Overtime_Policy,no
+Q49,conditional,en,Do I always need a medical report when I am sick?,No - one sick day without a report is allowed twice a year; more than 3 consecutive days always needs a report,AR-03_Sick_Leave_Policy,no
+Q50,conditional,en,Can I work remotely from outside Saudi Arabia?,"Only with written approval from the HR Director and IT Security, for a maximum of 10 working days per year",EN-02_Remote_Work_Policy,no
